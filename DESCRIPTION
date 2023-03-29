@@ -2,10 +2,22 @@ Package: WeightedForecastVerification
 Type: Package
 Title: What the Package Does (Title Case)
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
+Authors@R:
+    c(person(given = "Sam", family = "Allen", email = "sam.allen@stat.unibe.ch", role = c("cre", "aut")),
+    person(given = "Jonas", family = "Bhend", email = "jonas.bhend@meteoswiss.ch", role = "ctb"),
+    person(given = "Uni", family = "Bern", role = "cph"))
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 7.2.1
+Imports: 
+    ggplot2,
+    rmarkdown,
+    scoringRules
+Depends: 
+    R (>= 2.10)
+Suggests: 
+    knitr
+VignetteBuilder: knitr
