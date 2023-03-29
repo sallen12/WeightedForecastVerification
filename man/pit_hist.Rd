@@ -2,27 +2,91 @@
 % Please edit documentation in R/pit_hist.R
 \name{pit_hist}
 \alias{pit_hist}
-\title{plot rank and probability integral transform (PIT) histograms}
+\title{Rank and PIT histograms}
 \usage{
-pit_hist(ranks, bins = NULL, pitvals = FALSE, title = NULL, ymax = NULL)
+pit_hist(
+  z,
+  bins = NULL,
+  ranks = TRUE,
+  title = NULL,
+  ymax = NULL,
+  xlab = "Rel. Freq.",
+  ylab = "Rank"
+)
 }
 \arguments{
-\item{ranks}{vector of ranks.}
+\item{z}{vector of ranks or PIT values.}
 
 \item{bins}{number of bins to use in the histogram.}
 
-\item{pitvals}{logical specifying whether the input are PIT values.}
+\item{ranks}{logical specifying whether the input are ranks (TRUE) or PIT values (FALSE).}
 
-\item{title}{optional title of plot.}
+\item{title}{optional title}
 
 \item{ymax}{optional upper limit of the y axis.}
+
+\item{xlab, ylab}{optional x and y axes labels.}
+}
+\value{
+ggplot object containing the rank/PIT histogram
 }
 \description{
-plot rank and probability integral transform (PIT) histograms
+Plot rank and probability integral transform (PIT) histograms from a vector
+of ranks or PIT values.
+}
+\details{
+Rank and probability integral transform (PIT) histograms are well-established
+diagnostic tools with which to assess the calibration of probabilistic forecasts.
+
+If the forecasts are samples from a predictive distribution (i.e. ensemble forecasts),
+then rank histograms displays the relative frequency that the observation assumes
+each rank among the sample members. If the forecast is probabilistically calibrated,
+then the observation should be equally likely to assume any rank, meaning the ranks
+should be uniformly distributed. The resulting rank histogram should therefore be
+flat.
+
+If the forecasts are continuous predictive distributions, then probabilistic
+calibration can be assessed using PIT values, defined as the forecast
+distribution function evaluated at the observed outcome (with suitable
+randomisation for forecast distributions that are not continuous). If the observations
+are random draws from the forecast distribution, then these PIT values should
+follow a standard uniform distribution. Hence, plotting the distribution of
+these PIT values should yield a flat histogram.
+
+In both cases, deviations from a flat histogram can be used to identify systematic
+deficiencies in the forecasts.
+
+By default, \code{pit_hist()} assumes the input \code{z} is a vector of integer ranks,
+and thus that a rank histogram is to be plotted. Unless specified otherwise,
+the number of bins to display in the rank histogram is the maximum
+of the vector of ranks, though the number of bins can be specified manually
+using the \code{bins} argument. For PIT histograms, the default is \code{bins = 10}.
+
+If a PIT histogram is desired, then the user should set \code{ranks = FALSE}, and
+the vector \code{z} should contain values between zero and one.
 }
 \examples{
-pit_hist(ranks = sample(1:10, 1000, replace = TRUE), title = "Example 1", ymax = 1)
-pit_hist(ranks = runif(1000), bins = 10, pitvals = TRUE, title = "Example 2", ymax = 0.3)
-pit_hist(ranks = rbeta(1000, shape1 = 0.5, shape2 = 0.5), pitvals = TRUE, title = "Example 3")
-pit_hist(ranks = rbeta(1000, shape1 = 2, shape2 = 2), bins = 20, pitvals = TRUE, title = "Example 4")
+
+# Rank histograms
+fc_cal <- sample(1:10, 1000, replace = TRUE)
+fc_ud <- sample(1:10, 1000, replace = TRUE, prob = abs(seq(0, 1, length.out=10) - 0.5))
+fc_od <- sample(1:10, 1000, replace = TRUE, prob = 1 - abs(seq(0, 1, length.out=10) - 0.5))
+
+pit_hist(z = fc_cal, title = "Calibrated example", ymax = 0.3)
+pit_hist(z = fc_ud, title = "Under-dispersed example", ymax = 0.3)
+pit_hist(z = fc_od, title = "Over-dispersed example", ymax = 0.3)
+
+# PIT histograms (ranks = FALSE)
+pit_hist(z = runif(1000), ranks = FALSE, title = "Calibrated example", ymax = 0.5, ylab = "")
+pit_hist(z = rbeta(1000, shape1 = 0.5, shape2 = 0.5), ranks = FALSE, title = "Under-dispersed example")
+pit_hist(z = rbeta(1000, shape1 = 2, shape2 = 2), bins = 20, ranks = FALSE, title = "Over-dispersed example")
+
+}
+\references{
+Dawid, A. P. (1984): `Present position and potential developments: Some personal views: Statistical theory: The prequential approach'. \emph{Journal of the Royal Statistical Society: Series A (General)} 147, 278-290. \doi{10.2307/2981683}
+
+Gneiting, T., Balabdaoui, F., and Raftery, A. E. (2007): `Probabilistic forecasts, calibration and sharpness'. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 69, 243-268. \doi{10.1111/j.1467-9868.2007.00587.x}
+}
+\author{
+Sam Allen
 }
