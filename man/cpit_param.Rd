@@ -60,7 +60,7 @@ forecasts in the form of familiar parametric distributions.
 }
 \details{
 Probability integral transform (PIT) histograms are a well-established diagnostic
-tool with which to assess whether probabilistic forecasts are calibrated. Conditional
+tool with which to assess the calibration of probabilistic forecasts. Conditional
 PIT histograms (cPIT) allow forecast calibration to be assessed whilst focusing on a particular range
 of outcomes [\code{a}, \code{b}]. This is achieved by restricting attention to the observed values \code{y} that are between
 \code{a} and \code{b}, and calculating the PIT values corresponding to the conditional

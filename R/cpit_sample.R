@@ -1,19 +1,59 @@
-#' conditional PIT values for simulated forecast distributions
+#' Conditional PIT values for simulated forecast distributions
 #'
-#' Using kernel density estimation
+#' Calculate conditional probability integral transform (PIT) values for probabilistic
+#' forecasts in the form of samples or ensembles.
 #'
 #' @param y vector of observations.
 #' @param dat matrix of simulation draws from forecast distribution.
-#' @param a,b lower/upper threshold used in the weight function.
+#' @param a,b numeric; lower and upper threshold defining the interval of outcomes that are of interest.
 #' @param bw vector of bandwidth parameters to use in kernel density estimation.
 #'
+#' @details
+#'
+#' \code{cpit_sample()} calculates conditional PIT values for forecast distributions
+#' in the form of an ensemble or predictive sample. See the documentation for
+#' \code{\link{cpit_param}} for details on conditional PIT histograms.
+#'
+#' Calculating conditional PIT values requires the conditional predictive distribution
+#' given that the outcome is in the range [\code{a}, \code{b}]. This is achieved here
+#' by first smoothing the predictive sample using kernel density estimation.
+#'
+#' The argument \code{bw} specifies the bandwidth parameter to use within kernel
+#' density estimation. If this is not provided, then it is selected using the core
+#' function \code{\link{bw.nrd}}.
+#'
+#'
 #' @return vector of conditional PIT values.
-#' @export
+#'
+#' @author Sam Allen
+#'
+#' @references
+#' \emph{PIT histograms}
+#'
+#' Dawid, A. P. (1984):
+#' `Present position and potential developments: Some personal views: Statistical theory: The prequential approach'.
+#' \emph{Journal of the Royal Statistical Society: Series A (General)} 147, 278-290.
+#' \doi{10.2307/2981683}
+#'
+#' \emph{Conditional PIT histograms}
+#'
+#' Allen, S., Bhend, J., Martius, O. and Ziegel, J (2023):
+#' `Weighted verification tools to evaluate univariate and multivariate probabilistic forecasts for high-impact weather events'.
+#' \emph{Weather and Forecasting} 38, 499–516.
+#' \doi{10.1175/WAF-D-22-0161.1}
 #'
 #' @examples
-#' cpit_sample(y = rnorm(10), dat = matrix(rnorm(50), nrow = 10))
-#' cpit_sample(y = rnorm(10), dat = matrix(rnorm(50), nrow = 10), a = 0.5)
-#' cpit_sample(y = runif(10, 0, 5), dat = matrix(rnorm(50, 3), nrow = 10), a = 0, b = 2.5)
+#' mu <- rnorm(20, mean = 0, sd = 5)
+#' y <- rnorm(20, mean = mu, sd = 1)
+#' dat <- matrix(rnorm(2000, mean = mu, sd = 1), nrow = 20)
+#'
+#' cpit_sample(y = y, dat = dat)
+#' cpit_norm(y = y, mean = mu, sd = 1)
+#'
+#' cpit_sample(y = y, dat = dat, a = 0)
+#' cpit_norm(y = y, mean = mu, sd = 1, a = 0)
+#'
+#' @export
 cpit_sample <- function(y, dat, a = -Inf, b = Inf, bw = NULL){
   if (is.null(bw)) bw <- apply(dat, 1, bw.nrd)
   pit <- sapply(seq_along(y), function(i) p_tr_kde(y[i], m = dat[i, ], bw[i], a, b))
