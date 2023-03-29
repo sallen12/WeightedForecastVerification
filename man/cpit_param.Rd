@@ -93,12 +93,12 @@ cpit_norm(y = y, mean = mu, sd = 0.5, a = -1, b = 1) # restrict attention to val
 mu <- rnorm(10000, mean = 0, sd = 5)
 y <- rnorm(10000, mean = mu, sd = 1)
 
-pit_hist(cpit_norm(y = y, mean = mu, sd = 1), bins = 10, pitvals = TRUE) # PIT hist
+pit_hist(cpit_norm(y = y, mean = mu, sd = 1), pitvals = TRUE) # PIT hist
 
-pit_hist(cpit_norm(y = y, mean = mu, sd = 1, a = 0), bins = 10, pitvals = TRUE) # cPIT hist
-pit_hist(cpit_norm(y = y, mean = mu + 1, sd = 1, a = 0), bins = 10, pitvals = TRUE) # positive bias
-pit_hist(cpit_norm(y = y, mean = mu - 1, sd = 1, a = 0), bins = 10, pitvals = TRUE) # negative bias
-pit_hist(cpit_t(y = y, df = 1, a = 0), bins = 10, pitvals = TRUE)
+pit_hist(cpit_norm(y = y, mean = mu, sd = 1, a = 0), pitvals = TRUE) # cPIT hist
+pit_hist(cpit_norm(y = y, mean = mu + 1, sd = 1, a = 0), pitvals = TRUE) # positive bias
+pit_hist(cpit_norm(y = y, mean = mu - 1, sd = 1, a = 0), pitvals = TRUE) # negative bias
+pit_hist(cpit_t(y = y, df = 1, a = 0), pitvals = TRUE)
 
 }
 \references{
