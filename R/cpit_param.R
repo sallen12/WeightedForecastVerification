@@ -4,7 +4,7 @@
 #' forecasts in the form of familiar parametric distributions.
 #'
 #' @param y vector of observations.
-#' @param mean,sd,location,scale,df,ncp,shape,rate vector of parameters corresponding
+#' @param mean,sd,location,scale,rate,shape,shape1,shape2,df1,df2,df,ncp,meanlog,sdlog,nmeans,df,nranges,min,max vector of parameters corresponding
 #'  to the parametric predictive distributions.
 #' @param a,b numeric; lower and upper threshold defining the interval of outcomes that are of interest.
 #'
@@ -12,7 +12,7 @@
 #'
 #' Probability integral transform (PIT) histograms are a well-established diagnostic
 #' tool with which to assess whether probabilistic forecasts are calibrated. Conditional
-#' PIT histograms (cPIT) allow this to be achieved whilst focusing on a particular range
+#' PIT histograms (cPIT) allow forecast calibration to be assessed whilst focusing on a particular range
 #' of outcomes [\code{a}, \code{b}]. This is achieved by restricting attention to the observed values \code{y} that are between
 #' \code{a} and \code{b}, and calculating the PIT values corresponding to the conditional
 #' distribution given that the observation is in this range (see references for details).

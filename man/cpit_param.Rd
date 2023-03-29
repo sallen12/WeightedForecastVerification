@@ -48,7 +48,7 @@ cpit_weibull(y, shape, scale = 1, a = -Inf, b = Inf)
 
 \item{a, b}{numeric; lower and upper threshold defining the interval of outcomes that are of interest.}
 
-\item{mean, sd, location, scale, df, ncp, shape, rate}{vector of parameters corresponding
+\item{mean, sd, location, scale, rate, shape, shape1, shape2, df1, df2, df, ncp, meanlog, sdlog, nmeans, df, nranges, min, max}{vector of parameters corresponding
 to the parametric predictive distributions.}
 }
 \value{
@@ -61,7 +61,7 @@ forecasts in the form of familiar parametric distributions.
 \details{
 Probability integral transform (PIT) histograms are a well-established diagnostic
 tool with which to assess whether probabilistic forecasts are calibrated. Conditional
-PIT histograms (cPIT) allow this to be achieved whilst focusing on a particular range
+PIT histograms (cPIT) allow forecast calibration to be assessed whilst focusing on a particular range
 of outcomes [\code{a}, \code{b}]. This is achieved by restricting attention to the observed values \code{y} that are between
 \code{a} and \code{b}, and calculating the PIT values corresponding to the conditional
 distribution given that the observation is in this range (see references for details).
@@ -93,9 +93,9 @@ cpit_norm(y = y, mean = mu, sd = 0.5, a = -1, b = 1) # restrict attention to val
 mu <- rnorm(10000, mean = 0, sd = 5)
 y <- rnorm(10000, mean = mu, sd = 1)
 
-pit_hist(cpit_norm(y = y, mean = mu, sd = 1), bins = 10, pitvals = TRUE)
+pit_hist(cpit_norm(y = y, mean = mu, sd = 1), bins = 10, pitvals = TRUE) # PIT hist
 
-pit_hist(cpit_norm(y = y, mean = mu, sd = 1, a = 0), bins = 10, pitvals = TRUE)
+pit_hist(cpit_norm(y = y, mean = mu, sd = 1, a = 0), bins = 10, pitvals = TRUE) # cPIT hist
 pit_hist(cpit_norm(y = y, mean = mu + 1, sd = 1, a = 0), bins = 10, pitvals = TRUE) # positive bias
 pit_hist(cpit_norm(y = y, mean = mu - 1, sd = 1, a = 0), bins = 10, pitvals = TRUE) # negative bias
 pit_hist(cpit_t(y = y, df = 1, a = 0), bins = 10, pitvals = TRUE)
