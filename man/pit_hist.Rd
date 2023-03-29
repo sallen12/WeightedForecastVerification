@@ -21,7 +21,7 @@ pit_hist(
 
 \item{ranks}{logical specifying whether the input are ranks (TRUE) or PIT values (FALSE).}
 
-\item{title}{optional title}
+\item{title}{optional title.}
 
 \item{ymax}{optional upper limit of the y axis.}
 

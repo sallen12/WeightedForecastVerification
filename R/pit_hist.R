@@ -6,7 +6,7 @@
 #' @param z vector of ranks or PIT values.
 #' @param bins number of bins to use in the histogram.
 #' @param ranks logical specifying whether the input are ranks (TRUE) or PIT values (FALSE).
-#' @param title optional title
+#' @param title optional title.
 #' @param ymax optional upper limit of the y axis.
 #' @param xlab,ylab optional x and y axes labels.
 #'

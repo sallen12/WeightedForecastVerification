@@ -1,20 +1,75 @@
-#' PIT reliability diagrams (adapted from https://github.com/resinj/replication_GR21)
+#' PIT reliability diagrams
 #'
-#' @param pit vector of pit values.
-#' @param resampling logical specifying whether resampling should be used to calculate consistency regions
+#' Plot probability integral transform (PIT) reliability diagrams from a vector
+#' of PIT values.
+#'
+#' @param z vector of pit values.
+#' @param resampling logical specifying whether resampling should be used to calculate consistency regions.
 #' @param n_resamples number of resamples to use when calculating consistency regions.
 #' @param region_level significance level of the consistency regions.
-#' @param title optional title of plot.
+#' @param title optional title.
 #'
-#' @export
+#' @details
+#'
+#' This code has been adapted from https://github.com/resinj/replication_GR21.
+#'
+#' PIT histograms display the distribution of probability integral transform (PIT)
+#' values (see \code{\link{pit_hist}} for details). While PIT histograms have become
+#' well-established when assessing forecast calibration, there is generally no
+#' canonical choice for the number of bins to use in the histogram, and this choice
+#' can have a large impact on the histogram's interpretation, particularly when
+#' the sample size is small.
+#'
+#' Instead, it has been argued that it is more appropriate to display the (empirical)
+#' distribution function of the PIT values, rather than their (empirical) density function.
+#' If the PIT values are independent samples from a standard uniform distribution,
+#' as is the case for a probabilistically calibrated forecast, then this distribution
+#' function should lie on the line y=x, subject to sampling variation.
+#' This permits a straightforward assessment of whether or not forecasts are
+#' calibrated, and deviations from the diagonal can be used to identify systematic
+#' errors that occur in the forecasts. These plots of the PIT values' distribution function
+#' are called PIT reliability diagrams.
+#'
+#' To assess whether the distribution function is significantly different from the
+#' diagonal, we can calculate consistency regions around the diagonal, which would
+#' contain a calibrated forecast with a certain significance level. To calculate and
+#' display these regions, we can set the \code{resampling} argument of the
+#' \code{pit_reldiag()} function to \code{TRUE} (the default).
+#'
+#' These consistency regions are obtained using parametric bootstrap resampling,
+#' with the number of resamples given by the argument \code{n_resamples}, and the
+#' significance level by the argument \code{region_level}.
+#'
+#' @return ggplot object containing the PIT reliability diagram
+#'
+#' @author Sam Allen
+#'
+#' @references
+#'
+#' Gneiting, T., and Resin, J. (2021):
+#' `Regression diagnostics meets forecast evaluation: Conditional calibration, reliability diagrams, and coefficient of determination'.
+#' \emph{arXiv preprint.}
+#' \doi{arXiv:2108.03210}
 #'
 #' @examples
-#' pit_reldiag(pit = runif(1000), title = "Example 1")
-#' pit_reldiag(pit = rbeta(1000, shape1 = 0.5, shape2 = 0.5), title = "Example 2")
-#' pit_reldiag(pit = rbeta(1000, shape1 = 0.5, shape2 = 0.5), region_level = 0.5, title = "Example 3")
-#' pit_reldiag(pit = rbeta(1000, shape1 = 2, shape2 = 2), resampling = FALSE, title = "Example 4")
-pit_reldiag <- function(pit, resampling = TRUE, n_resamples = 1000, region_level = 0.9, title = NULL){
-  dist_pit = ecdf(pit)
+#' fc_cal <- runif(1000)
+#' pit_reldiag(z = fc_cal, title = "Example 1")
+#' pit_hist(z = fc_cal, ranks = FALSE, title = "Example 1")
+#'
+#' fc_ud <- rbeta(1000, shape1 = 0.5, shape2 = 0.5)
+#' pit_reldiag(z = fc_ud, title = "Example 2")
+#' pit_hist(z = fc_ud, ranks = FALSE, title = "Example 2")
+#'
+#' pit_reldiag(z = fc_ud, region_level = 0.5, title = "Example 3")
+#' pit_reldiag(z = fc_ud, region_level = 0.99, title = "Example 3")
+#'
+#' fc_od <- rbeta(1000, shape1 = 2, shape2 = 2)
+#' pit_reldiag(z = fc_od, resampling = FALSE, title = "Example 4")
+#' pit_hist(z = fc_od, ranks = FALSE, title = "Example 4")
+#'
+#' @export
+pit_reldiag <- function(z, resampling = TRUE, n_resamples = 1000, region_level = 0.9, title = NULL){
+  dist_pit = ecdf(z)
 
   x <- seq(0, 1, 0.01)
   plot_reldiag <- ggplot2::ggplot(data.frame(x = x, Fx = dist_pit(x))) +
@@ -30,7 +85,7 @@ pit_reldiag <- function(pit, resampling = TRUE, n_resamples = 1000, region_level
     low = floor(n_resamples * (1 - region_level)/2)
     up = n_resamples - low
 
-    resamples = sapply(1:n_resamples, function(i) runif(length(pit)))
+    resamples = sapply(1:n_resamples, function(i) runif(length(z)))
 
     dist_resamples_x = apply(resamples, 2, function(s) ecdf(s)(x))
     dist_resamples_x_sorted = apply(dist_resamples_x, 1, sort)

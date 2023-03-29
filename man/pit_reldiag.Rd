@@ -2,10 +2,10 @@
 % Please edit documentation in R/pit_reldiag.R
 \name{pit_reldiag}
 \alias{pit_reldiag}
-\title{PIT reliability diagrams (adapted from https://github.com/resinj/replication_GR21)}
+\title{PIT reliability diagrams}
 \usage{
 pit_reldiag(
-  pit,
+  z,
   resampling = TRUE,
   n_resamples = 1000,
   region_level = 0.9,
@@ -13,22 +13,76 @@ pit_reldiag(
 )
 }
 \arguments{
-\item{pit}{vector of pit values.}
+\item{z}{vector of pit values.}
 
-\item{resampling}{logical specifying whether resampling should be used to calculate consistency regions}
+\item{resampling}{logical specifying whether resampling should be used to calculate consistency regions.}
 
 \item{n_resamples}{number of resamples to use when calculating consistency regions.}
 
 \item{region_level}{significance level of the consistency regions.}
 
-\item{title}{optional title of plot.}
+\item{title}{optional title.}
+}
+\value{
+ggplot object containing the PIT reliability diagram
 }
 \description{
-PIT reliability diagrams (adapted from https://github.com/resinj/replication_GR21)
+Plot probability integral transform (PIT) reliability diagrams from a vector
+of PIT values.
+}
+\details{
+This code has been adapted from https://github.com/resinj/replication_GR21.
+
+PIT histograms display the distribution of probability integral transform (PIT)
+values (see \code{\link{pit_hist}} for details). While PIT histograms have become
+well-established when assessing forecast calibration, there is generally no
+canonical choice for the number of bins to use in the histogram, and this choice
+can have a large impact on the histogram's interpretation, particularly when
+the sample size is small.
+
+Instead, it has been argued that it is more appropriate to display the (empirical)
+distribution function of the PIT values, rather than their (empirical) density function.
+If the PIT values are independent samples from a standard uniform distribution,
+as is the case for a probabilistically calibrated forecast, then this distribution
+function should lie on the line y=x, subject to sampling variation.
+This permits a straightforward assessment of whether or not forecasts are
+calibrated, and deviations from the diagonal can be used to identify systematic
+errors that occur in the forecasts. These plots of the PIT values' distribution function
+are called PIT reliability diagrams.
+
+To assess whether the distribution function is significantly different from the
+diagonal, we can calculate consistency regions around the diagonal, which would
+contain a calibrated forecast with a certain significance level. To calculate and
+display these regions, we can set the \code{resampling} argument of the
+\code{pit_reldiag()} function to \code{TRUE} (the default).
+
+These consistency regions are obtained using parametric bootstrap resampling,
+with the number of resamples given by the argument \code{n_resamples}, and the
+significance level by the argument \code{region_level}.
 }
 \examples{
-pit_reldiag(pit = runif(1000), title = "Example 1")
-pit_reldiag(pit = rbeta(1000, shape1 = 0.5, shape2 = 0.5), title = "Example 2")
-pit_reldiag(pit = rbeta(1000, shape1 = 0.5, shape2 = 0.5), region_level = 0.5, title = "Example 3")
-pit_reldiag(pit = rbeta(1000, shape1 = 2, shape2 = 2), resampling = FALSE, title = "Example 4")
+fc_cal <- runif(1000)
+pit_reldiag(z = fc_cal, title = "Example 1")
+pit_hist(z = fc_cal, ranks = FALSE, title = "Example 1")
+
+fc_ud <- rbeta(1000, shape1 = 0.5, shape2 = 0.5)
+pit_reldiag(z = fc_ud, title = "Example 2")
+pit_hist(z = fc_ud, ranks = FALSE, title = "Example 2")
+
+pit_reldiag(z = fc_ud, region_level = 0.5, title = "Example 3")
+pit_reldiag(z = fc_ud, region_level = 0.99, title = "Example 3")
+
+fc_od <- rbeta(1000, shape1 = 2, shape2 = 2)
+pit_reldiag(z = fc_od, resampling = FALSE, title = "Example 4")
+pit_hist(z = fc_od, ranks = FALSE, title = "Example 4")
+
+}
+\references{
+Gneiting, T., and Resin, J. (2021):
+`Regression diagnostics meets forecast evaluation: Conditional calibration, reliability diagrams, and coefficient of determination'.
+\emph{arXiv preprint.}
+\doi{arXiv:2108.03210}
+}
+\author{
+Sam Allen
 }
