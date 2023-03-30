@@ -48,7 +48,7 @@ cpit_weibull(y, shape, scale = 1, a = -Inf, b = Inf)
 
 \item{a, b}{numeric; lower and upper threshold defining the interval of outcomes that are of interest.}
 
-\item{mean, sd, location, scale, rate, shape, shape1, shape2, df1, df2, df, ncp, meanlog, sdlog, nmeans, df, nranges, min, max}{vector of parameters corresponding
+\item{mean, sd, location, scale, rate, shape, shape1, shape2, df1, df2, df, ncp, meanlog, sdlog, nmeans, nranges, min, max}{vector of parameters corresponding
 to the parametric predictive distributions.}
 }
 \value{

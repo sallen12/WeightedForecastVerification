@@ -4,7 +4,7 @@
 #' forecasts in the form of familiar parametric distributions.
 #'
 #' @param y vector of observations.
-#' @param mean,sd,location,scale,rate,shape,shape1,shape2,df1,df2,df,ncp,meanlog,sdlog,nmeans,df,nranges,min,max vector of parameters corresponding
+#' @param mean,sd,location,scale,rate,shape,shape1,shape2,df1,df2,df,ncp,meanlog,sdlog,nmeans,nranges,min,max vector of parameters corresponding
 #'  to the parametric predictive distributions.
 #' @param a,b numeric; lower and upper threshold defining the interval of outcomes that are of interest.
 #'
