@@ -75,7 +75,7 @@ pit_hist <- function(z, bins = NULL, ranks = TRUE, title = NULL, ymax = NULL, xl
     if(!ranks) {
       bins <- 10
     }else {
-      bins <- max(z)
+      bins <- max(z, na.rm = T)
     }
   }
 
