@@ -7,19 +7,44 @@
 #' @param BS logical specifying whether the outcome-weighted score should be complemented with the Brier score.
 #'
 #' @return vector of weighted score values.
-#' @export
 #'
 #' @examples
 #' twcrps_norm(y = rnorm(10))
 #' owcrps_norm(y = rnorm(10))
 #' vrcrps_norm(y = rnorm(10))
+#'
+#' @name wcrps_param
+
+#' @rdname wcrps_param
+#' @export
+twcrps_logis <- function(y, location = 0, scale = 1, a = -Inf, b = Inf){
+  s <- scoringRules::crps_clogis(y = pmin(pmax(y, a), b), location = location, scale = scale, lower = a, upper = b)
+  return(s)
+}
+
+#' @rdname wcrps_param
+#' @export
+owcrps_logis <- function(y, location = 0, scale = 1, a = -Inf, b = Inf, BS = T){
+  w_y <- as.numeric(y > a & y < b)
+  obj <- scoringRules::crps_tlogis(y, location = location, scale = scale, lower = a, upper = b)*w_y
+
+  if(BS){
+    p <- plogis(b, location, scale) - plogis(a, location, scale)
+    obj <- obj + (p - w_y)^2
+  }
+
+  return(obj)
+}
+
+#' @rdname wcrps_param
+#' @export
 twcrps_norm <- function(y, mean = 0, sd = 1, a = -Inf, b = Inf){
   s <- scoringRules::crps_cnorm(y = pmin(pmax(y, a), b), location = mean, scale = sd, lower = a, upper = b)
   return(s)
 }
 
+#' @rdname wcrps_param
 #' @export
-#' @rdname twcrps_norm
 owcrps_norm <- function(y, mean = 0, sd = 1, a = -Inf, b = Inf, BS = T){
   w_y <- as.numeric(y > a & y < b)
   obj <- scoringRules::crps_tnorm(y, location = mean, scale = sd, lower = a, upper = b)*w_y
@@ -32,8 +57,29 @@ owcrps_norm <- function(y, mean = 0, sd = 1, a = -Inf, b = Inf, BS = T){
   return(obj)
 }
 
+#' @rdname wcrps_param
 #' @export
-#' @rdname twcrps_norm
+twcrps_t <- function(y, df, ncp = 0, a = -Inf, b = Inf){
+  s <- scoringRules::crps_ct(y = pmin(pmax(y, a), b), df = df, location = ncp, lower = a, upper = b)
+  return(s)
+}
+
+#' @rdname wcrps_param
+#' @export
+owcrps_t <- function(y, df, ncp = 0, a = -Inf, b = Inf, BS = T){
+  w_y <- as.numeric(y > a & y < b)
+  obj <- scoringRules::crps_tt(y, df = df, location = ncp, lower = a, upper = b)*w_y
+
+  if(BS){
+    p <- pt(b, df, ncp) - pt(a, df, ncp)
+    obj <- obj + (p - w_y)^2
+  }
+
+  return(obj)
+}
+
+#' @rdname wcrps_param
+#' @export
 vrcrps_norm <- function(y, mean = 0, sd = 1, a = -Inf, b = -Inf){
   t <- a
   y_star <- pmax(y, t)
