@@ -10,8 +10,8 @@ pit_hist(
   ranks = TRUE,
   title = NULL,
   ymax = NULL,
-  xlab = "Rel. Freq.",
-  ylab = "Rank"
+  ylab = "Rel. Freq.",
+  xlab = "Rank"
 )
 }
 \arguments{
@@ -77,7 +77,7 @@ pit_hist(z = fc_ud, title = "Under-dispersed example", ymax = 0.3)
 pit_hist(z = fc_od, title = "Over-dispersed example", ymax = 0.3)
 
 # PIT histograms (ranks = FALSE)
-pit_hist(z = runif(1000), ranks = FALSE, title = "Calibrated example", ymax = 0.5, ylab = "")
+pit_hist(z = runif(1000), ranks = FALSE, title = "Calibrated example", ymax = 0.5, xlab = "")
 pit_hist(z = rbeta(1000, shape1 = 0.5, shape2 = 0.5), ranks = FALSE, title = "Under-dispersed example")
 pit_hist(z = rbeta(1000, shape1 = 2, shape2 = 2), bins = 20, ranks = FALSE, title = "Over-dispersed example")
 
