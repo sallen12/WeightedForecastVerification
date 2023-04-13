@@ -1,0 +1,887 @@
+\documentclass[article,shortnames,nojss]{jss}
+
+%% -- LaTeX packages and custom commands ---------------------------------------
+
+%% packages
+\usepackage{thumbpdf,lmodern}
+\usepackage{amsfonts,amsmath,amssymb,amsthm}
+\usepackage{bbm,booktabs,setspace,longtable}
+\usepackage[T1]{fontenc}
+\allowdisplaybreaks
+
+%% custom commands
+\newcommand{\class}[1]{`\code{#1}'}
+\newcommand{\fct}[1]{\code{#1()}}
+
+\newcommand{\cA}{\mathcal{A}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\cF}{\mathcal{F}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\ind}{\mathbbm{1}}
+\newcommand{\dd}{\hspace{0.1cm} \mathrm{d}}
+
+<<preliminaries, echo=FALSE, results='hide'>>=
+# Using knitr for manuscript
+library(knitr)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+render_sweave()
+opts_chunk$set(engine='R', tidy=FALSE)
+
+# JSS code formatting
+options(prompt = "R> ", continue = "+  ", width = 70, useFancyQuotes = FALSE)
+
+# Formatting
+options(scipen = 1, digits = 3)
+Sys.setenv(LANG = 'en')
+
+# RNG initialization
+set.seed(395)
+
+# Required packages
+library(WeightedForecastVerification)
+library(ggplot2)
+#devtools::install_github("sallen12/scoringRules@weighted_scores")
+library(scoringRules)
+@
+
+
+%% -- Article metainformation (author, title, ...) -----------------------------
+
+\author{Sam Allen\\University of Bern\\Oeschger Centre for Climate Change Research}
+\Plainauthor{Sam Allen}
+
+\title{Weighted verification tools to evaluate univariate and multivariate probabilistic forecasts}
+\Plaintitle{Weighted verification tools to evaluate univariate and multivariate probabilistic forecasts}
+\Shorttitle{WeightedForecastVerification}
+
+\Abstract{
+  Probabilistic forecasts are often assessed and compared using proper scoring rules. To emphasise particular outcomes when evaluating probabilistic forecasts, various approaches have been proposed to construct weighted scoring rules, both in the univariate and multivariate setting. \cite{AllenEtAl2023} discuss and compare these different approaches, and illustrate how the theory underlying weighted scoring rules can also be applied when assessing forecast calibration. This vignette reproduces the results presented in this paper, and demonstrates how the accompanying R package allows these weighted verification tools to be implemented in practice.
+}
+
+\Keywords{probabilistic forecast evaluation, proper scoring rules, PIT histograms, \proglang{R}}
+\Plainkeywords{probabilistic forecast evaluation, proper scoring rules, PIT histograms, R}
+
+\Address{
+  Sam Allen\\
+  University of Bern\\
+  Institute of Mathematical Statistics and Actuarial Science\\
+  Alpeneggstrasse 22\\
+  3012 Bern, Switzerland\\
+  E-Mail: \email{sam.allen@unibe.ch}\\
+}
+
+
+\begin{document}
+%\SweaveOpts{concordance=TRUE}
+
+\section{Introduction}\label{sec:intro}
+
+Methods to verify and evaluate forecasts are integral to the development and improvement of forecast systems. Traditionally, the evaluation of probabilistic forecasts focuses on two aspects of forecast performance: forecast accuracy and forecast calibration. Forecast accuracy is a measure of the agreement between a forecast and the corresponding observation, and is quantified using proper scoring rules. Scoring rules summarise forecast performance using a single numerical value, allowing competing forecasters to be ranked and compared objectively; proper scoring rules further encourage the forecaster to issue what they truly believe will occur \citep{GneitingRaftery2007}. Forecast calibration, on the other hand, considers to what extent forecasts are reliable, or trustworthy - for example, do the observed outcomes occur with the same probability with which they are predicted? This is typically assessed visually using graphical diagnostic tools, though statistical tests also exist to check calibration more rigorously.
+
+However, it is often the case that certain outcomes are of more interest than others: when predicting events that can have a high impact on the forecast user, for example. Hence, over the past decade or so, several approaches have been developed to target particular outcomes during forecast evaluation. This is typically achieved by incorporating a weight function into conventional methods. \cite{AllenEtAl2023} recently reviewed weighted verification tools, and the goal of this vignette is to demonstrate how the accompanying \proglang{R} package allows users to implement these tools in practical applications. The package is not complete, and some potential extensions to the existing functionality are discussed in the final section.
+
+
+\section{Weighted verification tools}
+
+\subsection{Weighted scoring rules}
+
+Scoring rules are functions that take a probabilistic forecast $F$ and an observation $y$ as inputs, and output a real (possibly non-finite) value that quantifies the forecast's accuracy. Scoring rules are typically negatively oriented, such that a lower score indicates a more accurate forecast, and a scoring rule $S$ is called proper with respect to a class of probability distributions $\mathcal{F}$ if
+\begin{equation}
+    \E_{Y\sim G} S(G, Y) \leq \E_{Y\sim G} S(F, Y),
+\end{equation}
+for all $F, G \in \mathcal{F}$, where $\E_{Y}$ denotes the expectation with respect to the random variable $Y$. $S$ is strictly proper with respect to $\mathcal{F}$ if the above inequality is strict.
+
+For example, when the observations are univariate, i.e. $y \in \R$, probabilistic forecasts are often assessed using the \textit{continuous ranked probability score} \citep[CRPS;][]{MathesonWinkler1976}
+\begin{equation}
+\begin{split}
+    \mathrm{CRPS}(F, y) & = \int_{-\infty}^{\infty} (F(z) - \ind\{y \leq z\})^{2} \dd z \\
+    & = \E_{F}|X - y| - \frac{1}{2}\E_{F}|X - X^{\prime}|,
+\end{split}
+\end{equation}
+where $F$ is the cumulative distribution function associated with the forecast distribution, $X, X^{\prime} \sim F$ are independent, and $\ind$ denotes the indicator function. When the observations are multivariate, i.e. $y \in \R^{d}$ for $d > 1$, popular scoring rules include the \textit{energy score} \citep[ES;][]{GneitingRaftery2007} and the \textit{variogram score} \citep[VS;][]{ScheuererHamill2015}:
+\begin{equation}
+    \mathrm{ES}(F, y) = \E_{F}\|X - y\| - \frac{1}{2}\E_{F}\|X - X^{\prime}\|,
+\end{equation}
+where $\| \cdot \|$ is the Euclidean distance in $\R^{d} $, and $X, X^{\prime} \sim F$ are independent;
+\begin{equation}
+    \mathrm{VS}_{p}(F, y) = \sum_{i=1}^{d}\sum_{j=1}^{d} h_{i, j} (\E_{F}|X_{i} - X_{j}|^{p} - |y_{i} - y_{j}|^{p})^{2},
+\end{equation}
+where $y = (y_{1}, \dots, y_{d}) \in \mathbbm{R}^{d}$, $X = (X_{1}, \dots, X_{d}) \sim F$, $h_{i, j}$ are non-negative scaling parameters, and $p > 0$ is the order of the score. Typically, $ p $ is chosen to be one half, and the scaling parameters $h_{i, j}$ are all set to one.
+
+These scoring rules all fit into the class of kernel scores, a general class of scoring rules based on conditionally negative definite (c.n.d.) kernels \citep{GneitingRaftery2007}. Letting $\mathcal{X}$ denote the set of possible outcomes, a c.n.d.~kernel is a symmetric function $\rho: \mathcal{X} \times \mathcal{X} \to \R$ for which
+\begin{equation}
+    \sum_{i=1}^{n}\sum_{j=1}^{n} c_{i} c_{j} \rho(x_{i}, x_{j}) \leq 0
+\end{equation}
+for all $ n \in \mathbb{N}, x_{1}, \dots, x_{n} \in \mathcal{X}, $ and $ c_{1}, \dots, c_{n} \in \R $ that sum to zero.
+
+Given a c.n.d.~kernel $\rho$, the kernel score corresponding to $\rho$ is the scoring rule
+\begin{equation}
+    S_{\rho}(F, y) = \E_{F}[\rho(X, y)] - \frac{1}{2}\E_{F}[\rho(X, X^{\prime})] - \frac{1}{2}\rho(y, y),
+\end{equation}
+where $X, X^{\prime} \sim F$ are independent. Clearly, the CRPS is the kernel score corresponding to $\rho(z, z^{\prime}) = |z - z^{\prime}|$ for $z, z^{\prime} \in \R$, while the ES is the kernel score corresponding to $\rho(z, z^{\prime}) = \|z - z^{\prime}\|$ for $z, z^{\prime} \in \R^{d}$. \cite{AllenEtAl2023b} demonstrate that the variogram score additionally fits into this framework.
+
+Scoring rules encountered in practice typically evaluate the overall performance of the forecast distribution. However, it is often the case that certain outcomes are of more interest than others, and these should therefore be emphasised when calculating forecast accuracy. To achieve this, weighted scoring rules have been proposed that introduce a user-specified (non-negative) weight function $w$ into conventional scoring rules. This weight function can then be chosen to emphasise particular outcomes of interest.
+
+Weighted scoring rules have been studied in most detail using the CRPS. For example, \cite{MathesonWinkler1976} and \cite{GneitingRanjan2011} introduced the \textit{threshold-weighted CRPS} (twCRPS)
+\begin{equation}
+\begin{split}
+    \mathrm{twCRPS}(F, y; w) & = \int_{-\infty}^{\infty} (F(z) - \ind\{y \leq z\})^{2} w(z) \dd z \\
+    & = \E_{F}|v(X) - v(y)| - \frac{1}{2}\E_{F}|v(X) - v(X^{\prime})|,
+\end{split}
+\end{equation}
+where $X, X^{\prime} \sim F$ are independent, $w: \R \to \R_{\geq 0}$ is a weight function, and $v$ is any function such that $v(z) - v(z^{\prime}) = \int_{z^{\prime}}^{z} w(x) \dd x$, referred to as the chaining function \citep{AllenEtAl2023b}; \cite{HolzmannKlar2017} proposed an \textit{outcome-weighted CRPS} (owCRPS)
+\begin{equation}
+\begin{split}
+    \mathrm{owCRPS}(F, y; w) & = w(y)\int_{-\infty}^{\infty} (F_{w}(z) - \ind\{y \leq z\})^{2} \dd z \\
+    & = w(y) \mathrm{CRPS}(F_{w}, y),
+\end{split}
+\end{equation}
+where
+\begin{equation}
+    F_{w}(x) = \frac{\E_{F}\left[ \ind\{ X \leq x\} w(X) \right] }{\E_{F}[w(X)]},
+\end{equation}
+with $X \sim F$; and \cite{AllenEtAl2023b} introduced a \textit{vertically re-scaled CRPS} (vrCRPS)
+\begin{equation}
+\begin{split}
+    \mathrm{vrCRPS}(F, y; w, x_{0}) = & \E_{F}[|X - y|w(X)w(y)] - \frac{1}{2}\E_{F}[|X - X^{\prime}|w(X)w(X^{\prime})] \\
+    & + (\E_{F}[ |X - x_{0}|w(X) ] - |y - x_{0}|w(y) ) (\E_{F}[w(X)] - w(y)),
+\end{split}
+\end{equation}
+where $X, X^{\prime} \sim F$ are independent, and $x_{0}$ is an arbitrary real value.
+
+\cite{AllenEtAl2023b} then demonstrate that these three approaches to construct weighted versions of the CRPS can be generalised to the arbitrary class of kernel scores, allowing us to introduce, for example, threshold-weighted, outcome-weighted, and vertically re-scaled versions of the energy score and variogram score.
+
+\begin{equation}
+    \mathrm{twES}(F, y; v) = \E_{F} \| v(X) - v(y) \| - \frac{1}{2} \E_{F} \| v(X) - v(X^{\prime}) \|;
+\end{equation}
+\begin{equation}
+    \mathrm{owES}(F, y; w) = \frac{1}{\bar{w}_{F}} \E_{F} \left[ \| X - y \| w(X)w(y) \right] - \frac{1}{2 \bar{w}_{F} ^{2}} \E_{F} \left[ \| X - X^{\prime} \| w(X)w(X^{\prime})w(y) \right]; \\
+\end{equation}
+\begin{equation}
+\begin{split}
+    \mathrm{vrES}(F, y; w, x_{0}) = & \E_{F} [ \| X - y \| w(X)w(y) ] - \frac{1}{2} \E_{F} [ \| X - X^{\prime} \| w(X)w(X^{\prime}) ] \\
+    & + \left( \E_{F}[ \| X - x_{0} \| w(X) ] - \| y - x_{0} \| w(y) \right) \left( \E_{F} [ w(X) ] - w(y) \right);
+\end{split}
+\end{equation}
+\begin{equation}
+    \mathrm{twVS}_{p}(F, y; v) = \sum_{i=1}^{d}\sum_{j=1}^{d} h_{i, j} (\E_{F}|v(X)_{i} - v(X)_{j}|^{p} - |v(y)_{i} - v(y)_{j}|^{p})^{2};
+\end{equation}
+\begin{equation}
+    \mathrm{owVS}_{p}(F, y; w) = w(y) \sum_{i=1}^{d} \sum_{j=1}^{d} h_{i,j} \left( \frac{1}{\bar{w}_{F}} \E_{F} \left[ \left| X_{i} - X_{j} \right| ^{p} w(X) \right] - \left| y_{i} - y_{j} \right| ^{p} \right)^{2}; \\
+\end{equation}
+\begin{equation}
+\begin{split}
+    \mathrm{vrVS}_{p}(F, y; w, x_{0}) =& \E_{F} \left[ w(X)w(y) \sum_{i=1}^{d}\sum_{j=1}^{d} h_{i, j} (|X_{i} - X_{j}|^{p} - |y_{i} - y_{j}|^{p})^{2} \right] \\
+    & - \frac{1}{2} \E_{F} \left[ w(X)w(X^{\prime}) \sum_{i=1}^{d}\sum_{j=1}^{d} h_{i, j} (|X_{i} - X_{j}|^{p} - |X^{\prime}_{i} - X^{\prime}_{j}|^{p})^{2} \right] \\
+    & + \left( \E_{F} \left[ w(X) \sum_{j=1}^{d} h_{i, j} (|X_{i} - X_{j}|^{p} - |x_{0,i} - x_{0,j}|^{p})^{2} \right] \right. \\
+    & - \left. w(y) \sum_{j=1}^{d} h_{i, j} (|y_{i} - y_{j}|^{p} - |x_{0,i} - x_{0,j}|^{p})^{2} \right) \left( \bar{w}_{F} - w(y) \right),
+\end{split}
+\end{equation}
+where $w: \R^{d} \to \R_{\geq 0}$ is a weight function, $v: \R^{d} \to \R^{d}$ is a chaining function, $\bar{w}_{F} = \E_{F} [ w(X) ]$, and $x_{0} \in \R^{d}$.
+
+These weighted multivariate scoring rules allow multivariate outcomes of interest to be emphasised during forecast evaluation. The advantages and disadvantages of the various approaches to weight scoring rules are discussed in \cite{AllenEtAl2023}.
+
+\subsection{Conditional PIT plots}
+
+Proper scoring rules condense forecast performance into a single numerical value, allowing competing forecasters to be ranked and compared. However, scoring rules do not readily determine whether a prediction system is trustworthy, in the sense that the observed outcomes are statistically consistent with the forecasts that were issued. If the forecasts do align with the observations, then the prediction system is said to reliable, or calibrated.
+
+For univariate outcomes, forecast calibration is typically assessed using probability integral transform (PIT) values. It is a well-known result that if the outcome $Y$ is a continuous random variable with cumulative distribution function $F$, then the random variable $F(Y)$ will follow the standard uniform distribution. Hence, if a forecaster issues a sequence of predictive distributions $F_{1}, \dots, F_{n}$, and observes a sequence of observations $y_{1}, \dots, y_{n}$, then the PIT values $F_{1}(y_{1}), \dots, F_{n}(y_{n})$ should resemble a sample from the standard uniform distribution if the forecaster is (probabilistically) calibrated. In this sense, calibration means that the observations can be interpreted as random draws from the forecast distributions. A simple extension exists when the forecast distributions are not continuous, such as in ensemble forecasting; note that PIT values provide a generalisation of the rank of the observation among a finite sample from the forecast distribution.
+
+While statistical tests exist to assess whether or not the PIT values resemble a sample from a standard uniform distribution, calibration is typically assessed graphically, using either a histogram \citep{GneitingEtAl2007} or a P-P plot \citep[also called a reliability diagram;][]{GneitingResin2021} of the PIT values. If the PIT values are indeed samples from the standard uniform distribution, then the PIT histogram will be flat, and the PIT reliability diagram will be a straight line along the diagonal (up to sampling variation); if this is not the case, then there is evidence to suggest that the forecasts are miscalibrated, and the behaviour of the deviations can be used to diagnose the nature of the forecast errors.
+
+However, as with conventional scoring rules, PIT histograms assess overall forecast performance. \cite{AllenEtAl2023} demonstrate that the theory underlying weighted scoring rules can be applied to checks for forecast calibration by considering conditional PIT values. In particular, if we are interested in values in the range $(a, b)$, for $a,b \in \bar{\R}$, then we can restrict attention to the forecast distributions and the observations within this range. That is, we can calculate the conditional PIT values
+\begin{equation}
+    G(y) = \frac{F(y) - F(a)}{F(b) - F(a)}
+\end{equation}
+for all observations $y$ that are between $a$ and $b$. If interest in on values above some threshold $t$, then we can set $a = t$ and $b = \infty$.
+
+If the conditional distribution of the outcome variable $Y$ (given that $Y$ is between $a$ and $b$) is indeed the conditional distribution predicted by the forecasts, then these conditional PIT values should resemble a sample from the standard uniform distribution. This can again be verified by displaying these conditional PIT values in a histogram or reliability diagram. \cite{AllenEtAl2023} also discuss extensions of these conditional PIT values to the multivariate setting.
+
+
+
+\section{Examples}\label{sec:examples}
+
+\subsection{Weighted scoring rules}
+
+In this section, we discuss the implementation of weighted scoring rules and conditional PIT histograms and reliability diagrams using the accompanying \proglang{R} package.
+
+Threshold-weighted and outcome-weighted versions of the CRPS, ES, and VS (and a kernel score based on the Gaussian kernel) are now available in the \pkg{scoringRules} package in \proglang{R}, for forecasts in the form of a predictive sample or ensemble \citep{JordanEtAl2019,Allen2023}. Here, functions are available to compute weighted versions of the CRPS when the forecast distribution belongs to a few parametric families. For example, when the forecast is a normal distribution, the threshold-weighted, outcome-weighted, and vertically re-scaled CRPS can be calculated using
+\begin{Code}
+twcrps_norm(y, mean = 0, sd = 1, a = -Inf, b = Inf)
+owcrps_norm(y, mean = 0, sd = 1, a = -Inf, b = Inf, BS = T)
+vrcrps_norm(y, mean = 0, sd = 1, a = -Inf, b = -Inf)
+\end{Code}
+As in \pkg{scoringRules}, the \code{mean} and \code{sd} arguments refer to the mean and standard deviation of the normal predictive distributions, while \code{a} and \code{b} refer to the upper and lower bounds in the weight function $w(z) = \ind\{a < z < b\}$, which emphasises observations between \code{a} and \code{b}. In the default case, \code{a = -Inf} and \code{b = Inf}, and the weighted scoring rules all revert to the unweighted CRPS.
+
+The \code{BS} argument specifies whether or not the outcome-weighted CRPS should be complemented by adding the Brier score \citep[see][for details]{HolzmannKlar2017}. In doing so, the scoring rule will not only assess the shape of the conditional distribution, but also the probability it assigns to the region $(a, b)$.
+
+While \pkg{scoringRules} allows the weighted scoring rules to be implemented with arbitrary, user-specified weight functions, this is difficult to achieve for parametric forecast distributions. Hence, functionality only currently exists for the weight function $w(z) = \ind\{a < z < b\}$, which is most commonly employed in practice. If other weight functions are desired, then the user can first draw a large sample from the forecast distribution, which can then be assessed using the \code{twcrps_sample()} and \code{owcrps_sample()} functions in \pkg{scoringRules}.
+
+The following code can be used to obtain weighted (and unweighted) CRPS values corresponding to a standard normal predictive distribution, for a range of possible observations. These scores are displayed in Figure \ref{fig:scores_example} as a function of the observation $y$.
+<<weighted_score_example>>=
+y <- seq(-2, 2, 0.01)
+mu <- 0
+sigma <- 1
+t <- 0.5
+
+s <- crps_norm(y, mu, sigma)
+tws <- twcrps_norm(y, mu, sigma, a = t)
+ows <- owcrps_norm(y, mu, sigma, a = t, BS = F)
+ows_bs <- owcrps_norm(y, mu, sigma, a = t)
+vrs <- vrcrps_norm(y, mu, sigma, a = t)
+@
+
+\begin{figure}
+<<weighted_score_plot, echo=FALSE, dev='pdf', fig.width=4.75, fig.height=2.85, fig.align="center">>=
+
+t_ind <- which(y == t)
+lt_t <- 1:t_ind
+gt_t <- (t_ind + 1):length(y)
+
+df_lt <- data.frame(s = c(s[lt_t], tws[lt_t], ows[lt_t], ows_bs[lt_t], vrs[lt_t]), y = y[lt_t],
+                    mth = rep(c("CRPS", "twCRPS", "owCRPS", "owCRPS + BS", "vrCRPS"), each = length(y[lt_t])))
+df_gt <- data.frame(s = c(s[gt_t], tws[gt_t], ows[gt_t], ows_bs[gt_t], vrs[gt_t]), y = y[gt_t],
+                    mth = rep(c("CRPS", "twCRPS", "owCRPS", "owCRPS + BS", "vrCRPS"), each = length(y[gt_t])))
+
+ggplot() + geom_line(data = df_lt, aes(x = y, y = s, col = mth, linetype = mth)) +
+  geom_line(data = df_gt, aes(x = y, y = s, col = mth, linetype = mth)) +
+  scale_linetype_manual(values = c("dotted", rep("solid", 4))) +
+  scale_color_manual(values = c("black", "red", "blue", "black", "green4")) +
+  geom_vline(aes(xintercept = t), col = "grey") +
+  scale_x_continuous(breaks = c(-2:2, t), labels = c(-2:2, "t")) +
+  scale_y_continuous(name = "S(F, y)", limits = c(0, 1.5)) +
+  theme_bw() +
+  theme(legend.title = element_blank(), panel.grid = element_blank(),
+        legend.justification = c(0, 1), legend.position = c(0.3, 0.99)) +
+  guides(linetype = guide_legend(nrow = 5))
+
+@
+\caption{Weighted CRPS as a function of the observation $y$ when the forecast is a standard normal distribution.}
+\label{fig:scores_example}
+\end{figure}
+
+Weighted scoring rules can be implemented analogously for logistic and Student's $t$ distributions, e.g.
+
+\begin{Code}
+twcrps_logis(y, location = 0, scale = 1, a = -Inf, b = Inf)
+owcrps_logis(y, location = 0, scale = 1, a = -Inf, b = Inf, BS = T)
+\end{Code}
+
+and weighted versions of the CRPS are similarly displayed for a standard logistic forecast distribution in Figure \ref{fig:scores_logis_example}.
+
+Functionality is not currently available to compute the vertically re-scaled CRPS for parametric distributions other than the normal distribution. We note, however, that it should be straightforward to obtain an analytical formula for the vertically re-scaled CRPS for several familiar distributions.
+
+\begin{figure}
+<<weighted_score_logis_plot, echo=FALSE, dev='pdf', fig.width=4.75, fig.height=2.85, fig.align="center">>=
+
+s <- crps_logis(y, mu, sigma)
+tws <- twcrps_logis(y, mu, sigma, a = t)
+ows <- owcrps_logis(y, mu, sigma, a = t, BS = F)
+ows_bs <- owcrps_logis(y, mu, sigma, a = t)
+
+df_lt <- data.frame(s = c(s[lt_t], tws[lt_t], ows[lt_t], ows_bs[lt_t]), y = y[lt_t],
+                    mth = rep(c("CRPS", "twCRPS", "owCRPS", "owCRPS + BS"), each = length(y[lt_t])))
+df_gt <- data.frame(s = c(s[gt_t], tws[gt_t], ows[gt_t], ows_bs[gt_t]), y = y[gt_t],
+                    mth = rep(c("CRPS", "twCRPS", "owCRPS", "owCRPS + BS"), each = length(y[gt_t])))
+
+ggplot() + geom_line(data = df_lt, aes(x = y, y = s, col = mth, linetype = mth)) +
+  geom_line(data = df_gt, aes(x = y, y = s, col = mth, linetype = mth)) +
+  scale_linetype_manual(values = c("dotted", rep("solid", 3))) +
+  scale_color_manual(values = c("black", "red", "blue", "black")) +
+  geom_vline(aes(xintercept = t), col = "grey") +
+  scale_x_continuous(breaks = c(-2:2, t), labels = c(-2:2, "t")) +
+  scale_y_continuous(name = "S(F, y)", limits = c(0, 1.5)) +
+  theme_bw() +
+  theme(legend.title = element_blank(), panel.grid = element_blank(),
+        legend.justification = c(0, 1), legend.position = c(0.3, 0.99)) +
+  guides(linetype = guide_legend(nrow = 4))
+
+@
+\caption{As in Figure \ref{fig:scores_example} but for a standard logistic forecast distribution.}
+\label{fig:scores_logis_example}
+\end{figure}
+
+\subsection{Conditional PIT plots}
+
+The package additionally contains functions to check forecast calibration using PIT histograms and reliability diagrams
+
+\begin{Code}
+pit_hist(z, bins = NULL, ranks = TRUE, title = NULL, ymax = NULL,
+         ylab = "Rel. Freq.", xlab = "Rank")
+pit_reldiag(z, resampling = TRUE, n_resamples = 1000, region_level = 0.9,
+            title = NULL)
+\end{Code}
+
+The \code{pit_hist()} function takes a vector \code{z} as input, containing ranks (\code{ranks = TRUE}) or PIT values (\code{ranks = FALSE}), and plots a histogram of these values. The function additionally takes several arguments related to the design of the plot, including the number of bins in the histogram (\code{bins}), the x- and y-axes labels (\code{xlab} and \code{ylab}), the title (\code{title}), and the maximum of the y-axis (\code{ymax}).
+
+The \code{pit_reldiag()} function, on the other hand, displays a reliability diagram (i.e. P-P plot) containing the empirical distribution function of the PIT values in the vector \code{z}. The \code{resampling} argument specifies whether consistency intervals are to be generated around the diagonal line, indicating how much sampling uncertainty would be present if the forecasts were calibrated, while \code{n_resamples} and \code{region_level} specify the number of resamples to be calculated and the nominal coverage of the consistency interval to be displayed.
+
+These functions can also be applied to conditional PIT values. Conditional PIT values corresponding to parametric forecast distributions can be calculated using e.g.
+\begin{Code}
+cpit_norm(y, mean = 0, sd = 1, a = -Inf, b = Inf)
+\end{Code}
+for the normal distribution. Here, \code{y} is a vector of observations, and the remaining arguments are as described above. Functionality exists to calculate conditional PIT values for a wide range of families of distributions, all distributions for which the distribution function is readily available in \proglang{R}, e.g. using \code{pnorm()}.
+
+Conditional PIT values can also be calculated based on predictive samples, or ensemble forecasts, using the \code{cpit_sample()} function
+\begin{Code}
+cpit_sample(y, dat, a = -Inf, b = Inf, bw = NULL)
+\end{Code}
+Here, \code{dat} is a matrix with each row containing a sample or ensemble member. To calculate the conditional PIT values, the sample is first smoothed using kernel density estimation; note that this can lead to unreliable results if interest is on outcomes that exceed all sample members, since the conditional PIT values will rely on how the density estimation extrapolates beyond the observed sample. The \code{bw} argument specifies the bandwidth parameter to use within kernel density estimation; if this is not provided, then it is selected automatically based on the data.
+
+For example, consider the case where the observations are drawn from a $\cN ( \mu, \sigma^{2})$, with $\mu \sim \cN (0, 1 - \sigma^{2} )$ and $\sigma^{2} = 1/3$. The ideal forecaster issues the distribution $\cN ( \mu, \sigma^{2})$ as their forecast, which, of course, is calibrated. To verify this, Figure \ref{fig:cpit_example} displays the corresponding PIT histogram and reliability diagram.
+
+The conditional PIT values can similarly be visualised using these functions, and Figure \ref{fig:cpit_example} additionally displays these values, when $a = 1$ and $b = \infty$, i.e. when interest is on outcomes greater than one. For comparison, Figure \ref{fig:cpit_example} also contains a histogram of the PIT values (\textit{not} the conditional PIT values) when attention is restricted to observations that exceed one.
+
+\begin{figure}
+<<cpit_hist_plot, dev='pdf', fig.width=9, fig.height=6, fig.align="center", out.width = "\\linewidth">>=
+n <- 10000
+t <- 1
+
+sig <- sqrt(1/3)
+mu <- rnorm(n, 0, sqrt(1 - sig^2))
+y <- rnorm(n, mu, sig)                            # observations
+
+F_y <- pnorm(y, mu, sig)                          # PIT values
+F_y_res <- pnorm(y[y > t], mu[y > t], sig)        # restricted PIT values
+F_y_con <- cpit_norm(y, mu, sig, a = t)           # conditional PIT values
+
+bins <- 10
+p_s <- pit_hist(F_y, ranks = F, bins, ymax = 0.35, title = "PIT")
+p_r <- pit_hist(F_y_res, ranks = F, bins, ymax = 0.35, title = "Restricted PIT")
+p_c <- pit_hist(F_y_con, ranks = F, bins, ymax = 0.35, title = "Conditional PIT")
+
+p_s_rd <- pit_reldiag(F_y, title = "PIT")
+p_r_rd <- pit_reldiag(F_y_res, title = "Restricted PIT")
+p_c_rd <- pit_reldiag(F_y_con, title = "Conditional PIT")
+
+gridExtra::grid.arrange(p_s, p_r, p_c, p_s_rd, p_r_rd, p_c_rd, nrow = 2)
+@
+\caption{PIT histograms and PIT reliability diagrams for the ideal forecaster when the observations are drawn from the distribution $\cN (\mu, \sigma^{2})$, where $\mu \sim \cN(0, 1 - \sigma^{2})$ and $\sigma^{2} = 1/3$. Histograms and reliability diagrams are also displayed for PIT values when attention is restricted to observations that exceed 1, as well as conditional PIT values in this case.}
+\label{fig:cpit_example}
+\end{figure}
+
+These so-called restricted PIT values are not uniformly distributed, highlighting why alternative approaches are required to focus on particular outcomes when evaluating forecast calibration. The PIT values and conditional PIT values, on the other hand, appear to resemble a standard uniform distribution.
+
+Now suppose the observations are drawn from a logistic distribution with mean $\mu \sim \cN(0, 1 - \sigma^{2})$ and standard deviation equal to $\sigma$, with $\sigma^{2} = 1/3$. Consider two alternative forecast distributions, based on the normal distribution and Student's $t$ distribution with five degrees of freedom. PIT histograms and PIT reliability diagrams corresponding to these three forecasters are displayed in Figure \ref{fig:cpit_example2}. Conditional PIT values are also displayed for when $a = 2$ and $b = \infty$.
+
+\begin{figure}
+<<cpit_example2, echo=FALSE, dev='pdf', fig.width=9, fig.height=3, fig.align="center", out.width = "\\linewidth">>=
+n <- 1000000 # sample size
+bins <- 10 # bins in PIT histogram
+t <- 2 # threshold in weight function
+
+log_c <- sqrt(3)/pi # variance normalisation constant
+
+sig2 <- 1/3
+sig <- sqrt(sig2)
+mu <- rnorm(n, 0, sqrt(1 - sig2))
+
+y <- rlogis(n, mu, sig*sqrt(3)/pi) # observations
+w <- (y > t) # weight function
+
+
+## PIT values
+
+F_x1 <- plogis(y, mu, sig*log_c)
+F_x2 <- pt((y - mu)/sig, df = 5)
+F_x3 <- pnorm(y, mu, sig)
+
+
+## PIT histograms
+
+p1 <- pit_hist(F_x1, ranks = F, bins, ymax = 0.2, title = "Logistic")
+p2 <- pit_hist(F_x2, ranks = F, bins, ymax = 0.2, title = "Student's t")
+p3 <- pit_hist(F_x3, ranks = F, bins, ymax = 0.2, title = "Normal")
+gridExtra::grid.arrange(p1, p2, p3, nrow = 1)
+
+## PIT reliability diagrams
+
+samp_ind <- sample(1:n, 10000) # take random sample of data (for speed)
+p1 <- pit_reldiag(F_x1[samp_ind], region_level = 0.99)
+p2 <- pit_reldiag(F_x2[samp_ind], region_level = 0.99)
+p3 <- pit_reldiag(F_x3[samp_ind], region_level = 0.99)
+gridExtra::grid.arrange(p1, p2, p3, nrow = 1)
+
+## cPIT values
+
+cF_x1 <- (plogis(y[w], mu[w], sig*log_c) - plogis(t, mu[w], sig*log_c))/
+  (1 - plogis(t, mu[w], sig*log_c))
+cF_x2 <- (pt((y[w] - mu[w])/sig, df = 5) - pt((t - mu[w])/sig, df = 5))/
+  (1 - pt((t - mu[w])/sig, df = 5))
+cF_x3 <- (pnorm(y[w], mu[w], sig) - pnorm(t, mu[w], sig))/
+  (1 - pnorm(t, mu[w], sig))
+
+
+## cPIT histograms
+
+p1 <- pit_hist(cF_x1, ranks = F, bins, ymax = 0.2, title = "Logistic (cPIT)")
+p2 <- pit_hist(cF_x2, ranks = F, bins, ymax = 0.2, title = "Student's t (cPIT)")
+p3 <- pit_hist(cF_x3, ranks = F, bins, ymax = 0.2, title = "Normal (cPIT)")
+gridExtra::grid.arrange(p1, p2, p3, nrow = 1)
+
+## cPIT reliability diagrams
+
+p1 <- pit_reldiag(cF_x1, region_level = 0.99)
+p2 <- pit_reldiag(cF_x2, region_level = 0.99)
+p3 <- pit_reldiag(cF_x3, region_level = 0.99)
+gridExtra::grid.arrange(p1, p2, p3, nrow = 1)
+
+## standard reliability diagrams
+
+# probability of exceedance
+#pF_x1 <- 1 - plogis(t, mu, sig*sqrt(3)/pi)
+#pF_x2 <- 1 - pt((t - mu)/sig, df = 5)
+#pF_x3 <- 1 - pnorm(t, mu, sig)
+
+#reliabilitydiag::reliabilitydiag(X = pF_x1, y = as.numeric(w), xtype = "continuous")
+#reliabilitydiag::reliabilitydiag(X = pF_x2, y = as.numeric(w), xtype = "continuous")
+#reliabilitydiag::reliabilitydiag(X = pF_x3, y = as.numeric(w), xtype = "continuous")
+@
+\caption{PIT histograms and reliability diagrams for logistic, Student's $t$, and normal forecast distributions, when the observations are drawn from a logistic distribution with mean $\mu \sim \cN(0, 1 - \sigma^{2})$ and variance equal to $\sigma^{2} = 1/3$. The bottom two rows display the conditional PIT values when interest is on outcomes that are greater than two.}
+\label{fig:cpit_example2}
+\end{figure}
+
+Clearly, the ideal forecasts, constructed using the logistic distribution, are probabilistically and conditionally calibrated, whereas the alternative forecast strategies lead to forecasts with alternative biases when forecasting high outcomes.
+
+\newpage
+
+\section{Application}\label{sec:application}
+
+\subsection{Data}
+
+In this section, we reproduce the results presented in \cite{AllenEtAl2023}, wherein the weighted verification tools are used to evaluate forecasts obtained from an operational ensemble prediction system (COSMO-E) at the Swiss Federal Office of Meteorology and Climatology (MeteoSwiss). We consider COSMO-E forecasts for the daily mean temperature, and use the weighted verification tools to put emphasis on extreme heat events. The COSMO-E prediction system generates ensemble forecasts comprised of $M = 21$ members, and forecasts are available at 149 synoptic weather stations across Switzerland, for the seven summer seasons (May--September) from 2014 to 2020.
+
+Extreme heat events are defined in terms of MeteoSwiss' heat warning levels, which are used to inform the public when dangerously high temperatures are expected to occur. There are four heat levels, defined in Table \ref{tab:WarningLevels}, which depend on the daily mean temperature over a three day period. We therefore consider daily mean temperature forecasts over the coming three days. The forecasts are evaluated at each lead time separately using univariate verification techniques, while multivariate tools are used to assess the forecasts over the entire three day period.
+
+\begin{table}
+    \centering
+    \begin{tabular}{| c | c |}
+    \hline
+    Heat level & Criterion \\
+    \hline
+    1 & T $< 25^{\circ}$C on all three days \\
+    2 & T $\geq 25^{\circ}$C on one or two days \\
+    3 & T $\geq 25^{\circ}$C on all three days, T $< 27^{\circ}$C on at least one day \\
+    4 & T $\geq 27^{\circ}$C on all three days \\
+    \hline
+    \end{tabular}
+    \caption{MeteoSwiss heat warning levels given daily mean temperatures (T) over a three day period.}
+    \label{tab:WarningLevels}
+\end{table}
+
+The COSMO-E ensemble forecasts are compared to two alternative forecast strategies: a climatological forecast, which always issues the local climatological temperature distribution as the prediction, and a statistically post-processed forecast, designed to remove systematic errors that occur in the COSMO-E forecasts. The post-processing method is based on an approach employed at MeteoSwiss, and further details regarding these methods (and the COSMO-E forecasts) can be found in \cite{AllenEtAl2023}.
+
+Note that the exact data used in \cite{AllenEtAl2023} is owned by MeteoSwiss and therefore not publicly available. To circumvent this, random noise has been added to the data, and a subset of this noisy data is available in this package. The results that we obtain here are therefore not identical to those presented in \cite{AllenEtAl2023}, though the implementation of the weighted verification tools is the same. The data can be accessed using
+
+<<load_noisy_data, results='hide'>>=
+data("noisy_data", package = "WeightedForecastVerification")
+list2env(noisy_data, globalenv())
+rm(noisy_data)
+@
+
+The result is a list of matrices, which are converted to independent variables using the \code{list2env()} function. These matrices include the observations (\code{obs_dat}), the COSMO-E ensemble forecasts (\code{ens_raw}), and ensemble forecasts obtained from the climatological (\code{ens_clim}), and statistical post-processed (\code{ens_pp}) forecast distributions. Both the climatological and post-processed ensemble forecasts correspond to quantiles from a normal distribution, which are then reordered according to some multivariate dependence template. The means and standard deviations of these normal distributions are also available (\code{clim_mean}, \code{clim_sd}, \code{pp_mean}, \code{pp_sd}). The subset of data contains three lead times, 2000 forecast cases, and 10 ensemble members.
+
+\subsection{Results}
+
+Firstly, consider the unweighted scores for the three forecast strategies. These scores can be obtained using the \pkg{scoringRules} functionality. The following code returns the average CRPS for the three forecast strategies as a function of the forecast lead time.
+
+<<crps>>=
+n_lt <- 3
+
+s_clim <- sapply(1:n_lt, function(lt)
+  crps_norm(obs_dat[lt, ], clim_mean[lt, ], clim_sd[lt, ]))
+s_raw <- sapply(1:n_lt, function(lt)
+  crps_sample(obs_dat[lt, ], ens_raw[lt, , ]))
+s_pp <- sapply(1:n_lt, function(lt)
+  crps_norm(obs_dat[lt, ], pp_mean[lt, ], pp_sd[lt, ]))
+
+mean_score <- c(colMeans(s_clim), colMeans(s_raw), colMeans(s_pp))
+
+score_mat <- matrix(mean_score, nrow = 3, byrow = T)
+rownames(score_mat) <- c("Clim.", "COSMO", "PP")
+colnames(score_mat) <- 1:n_lt
+print(score_mat)
+@
+
+The accuracy of the forecast trajectories over the three days can similary be assessed using the energy score and variogram score.
+
+<<es, echo=FALSE>>=
+n_t <- 2000
+n_ens <- 10
+
+# get scores
+es_raw <- sapply(1:n_t, function(i) es_sample(obs_dat[, i], ens_raw[, i, ]))
+es_pp <- sapply(1:n_t, function(i) es_sample(obs_dat[, i], ens_pp[, i, ]))
+es_clim <- sapply(1:n_t, function(i) es_sample(obs_dat[, i], ens_clim[, i, ]))
+vs_raw <- sapply(1:n_t, function(i) vs_sample(obs_dat[, i], ens_raw[, i, ]))
+vs_pp <- sapply(1:n_t, function(i) vs_sample(obs_dat[, i], ens_pp[, i, ]))
+vs_clim <- sapply(1:n_t, function(i) vs_sample(obs_dat[, i], ens_clim[, i, ]))
+
+# print mean scores
+score_mat <- matrix(c(mean(es_clim), mean(es_raw), mean(es_pp),
+                      mean(vs_clim), mean(vs_raw), mean(vs_pp)),
+                      nrow = 3)
+rownames(score_mat) <- c("Clim.", "COSMO", "PP")
+colnames(score_mat) <- c("ES", "VS")
+print(score_mat)
+@
+
+Post-processing appears beneficial here, both in the univariate and multivariate case, while the raw COSMO-E forecasts significantly outperform the climatological forecasts.
+
+The calibration of the forecasts can be assessed using PIT histograms and PIT reliability diagrams. Having calculated the ranks and PIT values, Figure \ref{fig:pit_plots} displays the resulting rank histogram (for the COSMO-E ensemble), PIT histograms (for the climatological and post-processed forecast distributions), and PIT reliability diagrams, at a lead time of three days.
+
+<<pit, echo=FALSE>>=
+n_bins <- n_ens + 1 # select number of bins in the histogram
+lead <- 3 # select lead time
+
+# get pit values
+pit_clim <- pnorm(obs_dat[lead, ], clim_mean[lead, ], clim_sd[lead, ])
+pit_raw <- sapply(seq_along(obs_dat[lead, ]), function(i) rank(c(obs_dat[lead, i], ens_raw[lead, i, ]))[1])
+pit_pp <- pnorm(obs_dat[lead, ], pp_mean[lead, ], pp_sd[lead, ])
+@
+
+\begin{figure}
+<<pit_plots, dev='pdf', fig.width=9, fig.height=6, fig.align="center", out.width = "\\linewidth">>=
+bins <- 11
+p_c <- pit_hist(pit_clim, bins, ranks = F, title = "Climatology", ymax = 0.32)
+p_r <- pit_hist(pit_raw, title = "COSMO", ymax = 0.32)
+p_p <- pit_hist(pit_pp, bins, ranks = F, title = "Post-processed", ymax = 0.32)
+
+p_c_rd <- pit_reldiag(pit_clim)
+p_r_rd <- pit_reldiag(pit_raw, ranks = T)
+p_p_rd <- pit_reldiag(pit_pp)
+
+gridExtra::grid.arrange(p_c, p_r, p_p, p_c_rd, p_r_rd, p_p_rd, nrow = 2)
+@
+\caption{PIT histograms and reliability diagrams for the three forecast strategies, at a lead time of three days.}
+\label{fig:pit_plots}
+\end{figure}
+
+The COSMO-E forecasts, despite achieving better scores than the climatological forecasts, are clearly under-dispersed and thus miscalibrated. The PIT histogram and reliability diagram of the climatological forecasts indicate that the normal distribution is perhaps not the most appropriate distribution to use when modelling the daily mean temperatures in this study. The post-processed forecast distributions, on the other hand, appear well-calibrated.
+
+The deviation of the PIT histograms from a flat histogram can be quantified using reliability indices. These can be calculated using the function
+\begin{Code}
+rel_index(z, bins = NULL, ranks = TRUE, method = "absolute")
+\end{Code}
+The argument \code{z} again represents a vector of ranks or PIT values (depending on \code{ranks}), while \code{bins} is the number of bins to be used in the histogram. Three methods are then available to calculate reliability indices: \code{method = `absolute'} (default) measures the sum of absolute distances between the observed relative frequencies and the optimal frequency, $1/$\code{bins}; \code{method = `squared'} measures the sum of squared distances between the observed relative frequencies and $1/$\code{bins}, which follows a chi-squared distribution when appropriately scaled; and \code{method = `entropy'} measures the entropy of the relative frequencies, which will be equal to 1 for a uniform rank histogram, and between 0 and 1 otherwise. These methods are discussed in detail in \cite{Wilks2019}.
+
+We can calculate reliability indices for the three forecast strategies considered here as a function of lead time. The reliability index is closest to zero for the post-processed forecasts, and is largest for the raw COSMO-E forecasts, which (for \code{method = `absolute'}) suggests that the post-processed forecasts are well-calibrated, whereas the COSMO-E forecasts are the least calibrated. These results align with the PIT histograms and reliability diagrams in Figure \ref{fig:pit_plots}.
+
+<<rel_index, echo=FALSE>>=
+## reliability index
+
+# get reliability indices
+ri_clim <- sapply(1:n_lt, function(lt){
+  pit_clim <- pnorm(obs_dat[lt, ], clim_mean[lt, ], clim_sd[lt, ])
+  index <- rel_index(pit_clim, bins = n_bins, ranks = F)
+  return(index)
+})
+ri_raw <- sapply(1:n_lt, function(lt){
+  pit_raw <- sapply(seq_along(obs_dat[lt, ]), function(i) rank(c(obs_dat[lt, i], ens_raw[lt, i, ]))[1])
+  index <- rel_index(pit_raw)
+  return(index)
+})
+ri_pp <- sapply(1:n_lt, function(lt){
+  pit_pp <- pnorm(obs_dat[lt, ], pp_mean[lt, ], pp_sd[lt, ])
+  index <- rel_index(pit_pp, bins = n_bins, ranks = F)
+  return(index)
+})
+
+# print reliability indices
+score_mat <- matrix(c(ri_clim, ri_raw, ri_pp), nrow = 3, byrow = T)
+rownames(score_mat) <- c("Clim.", "COSMO", "PP")
+colnames(score_mat) <- 1:n_lt
+print(score_mat)
+@
+
+
+While these methods assess overall forecast accuracy, consider now forecasts made for extreme heat events. We can evaluate the accuracy of these forecasts using weighted scoring rules. For example, to calculate the threshold-weighted CRPS for the weight function $w(z) = \ind\{z > t\}$, for some threshold $t$, we can use
+
+<<twcrps>>=
+t_vec <- -5:30              # select range of thresholds
+lead <- 3                   # select lead time
+
+wcrps_raw <- sapply(t_vec, function(t)
+  twcrps_sample(obs_dat[lead, ], ens_raw[lead, , ], a = t))
+wcrps_raw <- colMeans(wcrps_raw)
+@
+
+This can be repeated for the alternative forecast strategies, and for the outcome-weighted and vertically re-scaled CRPS, and these weighted scores are displayed as a function of $t$ in Figure \ref{fig:tw_crps}
+
+\begin{figure}
+<<twcrps_plot, echo=FALSE, dev='pdf', fig.width=4.5, fig.height=8.1, fig.align="center">>=
+
+## twcrps
+
+# get scores
+wcrps_clim <- sapply(t_vec, function(t)
+  twcrps_norm(obs_dat[lead, ], clim_mean[lead, ], clim_sd[lead, ], a = t))
+wcrps_pp <- sapply(t_vec, function(t)
+  twcrps_norm(obs_dat[lead, ], pp_mean[lead, ], pp_sd[lead, ], a = t))
+
+# get mean scores
+wcrps_clim <- colMeans(wcrps_clim)
+wcrps_pp <- colMeans(wcrps_pp)
+
+
+# plot mean scores against threshold
+df <- data.frame(s = c(1 - wcrps_clim/wcrps_raw, 1 - wcrps_pp/wcrps_raw),
+                 t = t_vec, mth = rep(c("Clim.", "Post-proc."), each = length(t_vec)))
+p_tw <- ggplot(df) + geom_line(aes(x = t, y = s, col = mth), linewidth = 1) +
+  geom_hline(aes(yintercept = 0), lty = "dotted") +
+  geom_vline(aes(xintercept = 25), col = "grey", lty = "dashed") +
+  geom_vline(aes(xintercept = 27), col = "grey", lty = "dashed") +
+  scale_x_continuous(name = "Threshold (C)") +
+  scale_y_continuous(name = "twCRPSS", limits = c(-2.3, 1)) +
+  theme_bw() +
+  theme(legend.justification = c(0, 0.5), legend.position = c(0.01, 0.5),
+        panel.grid = element_blank(), legend.title = element_blank())
+
+## owcrps
+
+ens_mean <- apply(ens_raw, c(1, 2), mean)     # get ensemble mean and standard deviation
+ens_sd <- apply(ens_raw, c(1, 2), sd)
+
+# get scores
+wcrps_clim <- sapply(t_vec, function(t) owcrps_norm(obs_dat[lead, ], clim_mean[lead, ], clim_sd[lead, ], a = t, b = Inf))
+wcrps_raw <- sapply(t_vec, function(t) owcrps_norm(obs_dat[lead, ], ens_mean[lead, ], ens_sd[lead, ], a = t, b = Inf))
+wcrps_pp <- sapply(t_vec, function(t) owcrps_norm(obs_dat[lead, ], pp_mean[lead, ], pp_sd[lead, ], a = t, b = Inf))
+
+# get mean scores
+wcrps_clim <- colMeans(wcrps_clim)
+wcrps_raw <- colMeans(wcrps_raw)
+wcrps_pp <- colMeans(wcrps_pp)
+
+# plot mean scores against threshold
+df <- data.frame(s = c(1 - wcrps_clim/wcrps_raw, 1 - wcrps_pp/wcrps_raw),
+                 t = t_vec, mth = rep(c("Clim.", "Post-proc."), each = length(t_vec)))
+p_ow <- ggplot(df) + geom_line(aes(x = t, y = s, col = mth), linewidth = 1) +
+  geom_hline(aes(yintercept = 0), lty = "dotted") +
+  geom_vline(aes(xintercept = 25), col = "grey", lty = "dashed") +
+  geom_vline(aes(xintercept = 27), col = "grey", lty = "dashed") +
+  scale_x_continuous(name = "Threshold (C)") +
+  scale_y_continuous(name = "owCRPSS", limits = c(-2.3, 1)) +
+  theme_bw() +
+  theme(legend.justification = c(0, 0.5), legend.position = c(0.01, 0.5),
+        panel.grid = element_blank(), legend.title = element_blank())
+
+## vrcrps
+
+# get scores
+wcrps_clim <- sapply(t_vec, function(t) vrcrps_norm(obs_dat[lead, ], clim_mean[lead, ], clim_sd[lead, ], a = t))
+wcrps_raw <- sapply(t_vec, function(t)
+  crps_sample(obs_dat[lead, ]*(obs_dat[lead, ] > t), ens_raw[lead, , ]*(ens_raw[lead, , ] > t))
+)
+wcrps_pp <- sapply(t_vec, function(t) vrcrps_norm(obs_dat[lead, ], pp_mean[lead, ], pp_sd[lead, ], a = t))
+
+# get mean scores
+wcrps_clim <- colMeans(wcrps_clim)
+wcrps_raw <- colMeans(wcrps_raw)
+wcrps_pp <- colMeans(wcrps_pp)
+
+# plot mean scores against threshold
+df <- data.frame(s = c(1 - wcrps_clim/wcrps_raw, 1 - wcrps_pp/wcrps_raw),
+                 t = t_vec, mth = rep(c("Clim.", "Post-proc."), each = length(t_vec)))
+p_vr <- ggplot(df) + geom_line(aes(x = t, y = s, col = mth), linewidth = 1) +
+  geom_hline(aes(yintercept = 0), lty = "dotted") +
+  geom_vline(aes(xintercept = 25), col = "grey", lty = "dashed") +
+  geom_vline(aes(xintercept = 27), col = "grey", lty = "dashed") +
+  scale_x_continuous(name = "Threshold (C)") +
+  scale_y_continuous(name = "vrCRPSS", limits = c(-2.3, 1)) +
+  theme_bw() +
+  theme(legend.justification = c(0, 0.5), legend.position = c(0.01, 0.5),
+        panel.grid = element_blank(), legend.title = element_blank())
+
+gridExtra::grid.arrange(p_tw, p_ow, p_vr)
+@
+\caption{Skill scores for the twCRPS, owCRPS, and vrCRPS as a function of the threshold used in the weight function $w(z) = \ind\{z > t\}$ at a lead time of three days. The skill scores are shown for the climatological and post-processed forecast distributions, with the COSMO-E forecasts as the reference approach. Vertical dashed lines are drawn at 25 and 27 degrees.}
+\label{fig:tw_crps}
+\end{figure}
+
+While the threshold-weighted CRPS can be applied at each lead time separately, if we want to emphasise the heat events defined in Table \ref{tab:WarningLevels}, then we need to consider the multivariate forecast performance. This can be achieved using threshold-weighted versions of the energy and variogram score. In this case, the multivariate forecast distributions are in the form of a finite sample, and hence the \code{twes_sample()} and \code{twvs_sample()} functions from \pkg{scoringRules} can be employed.
+
+The resulting threshold-weighted energy scores corresponding to each heat level are
+
+<<twes, echo=FALSE>>=
+score_means <- matrix(NA, nrow = 5, ncol = 3)
+rownames(score_means) <- 0:4
+colnames(score_means) <- c("Clim.", "COSMO", "PP")
+
+## all events (same as unweighted score)
+
+chain_func <- function(x) x
+s_clim <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_clim[, i, ], chain_func = chain_func))
+s_raw <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_raw[, i, ], chain_func = chain_func))
+s_pp <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_pp[, i, ], chain_func = chain_func))
+score_means[1, ] <- c(mean(s_clim), mean(s_raw), mean(s_pp))
+
+
+## category 1 heat event
+x_0 <- c(25, 25, 25)
+weight_func <- function(x) all(x < 25)
+chain_func <- function(x) x*weight_func(x) + x_0*(1 - weight_func(x))
+s_clim <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_clim[, i, ], chain_func = chain_func))
+s_raw <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_raw[, i, ], chain_func = chain_func))
+s_pp <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_pp[, i, ], chain_func = chain_func))
+score_means[2, ] <- c(mean(s_clim), mean(s_raw), mean(s_pp))
+
+# category 2 heat event
+weight_func <- function(x) sum(x >= 25) %in% c(1, 2)
+s_clim <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_clim[, i, ], chain_func = chain_func))
+s_raw <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_raw[, i, ], chain_func = chain_func))
+s_pp <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_pp[, i, ], chain_func = chain_func))
+score_means[3, ] <- c(mean(s_clim), mean(s_raw), mean(s_pp))*10
+
+# category 3 heat event
+weight_func <- function(x) all(x >= 25) & any(x < 27)
+s_clim <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_clim[, i, ], chain_func = chain_func))
+s_raw <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_raw[, i, ], chain_func = chain_func))
+s_pp <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_pp[, i, ], chain_func = chain_func))
+score_means[4, ] <- c(mean(s_clim), mean(s_raw), mean(s_pp))*10
+
+# category 4 heat event
+x_0 <- c(27, 27, 27)
+weight_func <- function(x) all(x >= 27)
+s_clim <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_clim[, i, ], chain_func = chain_func))
+s_raw <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_raw[, i, ], chain_func = chain_func))
+s_pp <- sapply(1:n_t, function(i) twes_sample(obs_dat[, i], ens_pp[, i, ], chain_func = chain_func))
+score_means[5, ] <- c(mean(s_clim), mean(s_raw), mean(s_pp))*100
+
+# print scores
+rownames(score_means) <- c("All", "Lev. 1", "Lev. 2", "Lev. 3", "Lev. 4")
+print(t(score_means))
+
+# plot scores
+# df <- data.frame(s = as.vector(score_means),
+#                  mth = rep(c("Clim.", "COSMO", "PP"), each = 5),
+#                  cat = c("All", "Cat1", "Cat2", "Cat3", "Cat4"))
+# ggplot(df) + geom_point(aes(x = cat, y = s, col = mth, shape = mth)) +
+#   scale_x_discrete(name = NULL) +
+#   scale_y_continuous(name = "Threshold-weighted Energy Score") +
+#   theme_bw() +
+#   theme(legend.justification = c(1, 1), legend.position = c(0.99, 0.99),
+#         legend.title = element_blank())
+@
+
+while the threshold-weighted variogram scores are
+
+<<twvs, echo=FALSE>>=
+score_means <- matrix(NA, nrow = 5, ncol = 3)
+rownames(score_means) <- 0:4
+colnames(score_means) <- c("Clim.", "COSMO", "PP")
+
+## all events (same as unweighted score)
+
+chain_func <- function(x) x
+s_clim <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_clim[, i, ], chain_func = chain_func))
+s_raw <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_raw[, i, ], chain_func = chain_func))
+s_pp <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_pp[, i, ], chain_func = chain_func))
+score_means[1, ] <- c(mean(s_clim), mean(s_raw), mean(s_pp))
+
+
+## category 1 heat event
+x_0 <- c(25, 25, 25)
+weight_func <- function(x) all(x < 25)
+chain_func <- function(x) x*weight_func(x) + x_0*(1 - weight_func(x))
+s_clim <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_clim[, i, ], chain_func = chain_func))
+s_raw <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_raw[, i, ], chain_func = chain_func))
+s_pp <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_pp[, i, ], chain_func = chain_func))
+score_means[2, ] <- c(mean(s_clim), mean(s_raw), mean(s_pp))
+
+# category 2 heat event
+weight_func <- function(x) sum(x >= 25) %in% c(1, 2)
+s_clim <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_clim[, i, ], chain_func = chain_func))
+s_raw <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_raw[, i, ], chain_func = chain_func))
+s_pp <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_pp[, i, ], chain_func = chain_func))
+score_means[3, ] <- c(mean(s_clim), mean(s_raw), mean(s_pp))*10
+
+# category 3 heat event
+weight_func <- function(x) all(x >= 25) & any(x < 27)
+s_clim <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_clim[, i, ], chain_func = chain_func))
+s_raw <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_raw[, i, ], chain_func = chain_func))
+s_pp <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_pp[, i, ], chain_func = chain_func))
+score_means[4, ] <- c(mean(s_clim), mean(s_raw), mean(s_pp))*10
+
+# category 4 heat event
+x_0 <- c(27, 27, 27)
+weight_func <- function(x) all(x >= 27)
+s_clim <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_clim[, i, ], chain_func = chain_func))
+s_raw <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_raw[, i, ], chain_func = chain_func))
+s_pp <- sapply(1:n_t, function(i) twvs_sample(obs_dat[, i], ens_pp[, i, ], chain_func = chain_func))
+score_means[5, ] <- c(mean(s_clim), mean(s_raw), mean(s_pp))*100
+
+# print scores
+rownames(score_means) <- c("All", "Lev. 1", "Lev. 2", "Lev. 3", "Lev. 4")
+print(t(score_means))
+
+# plot scores
+#df <- data.frame(s = as.vector(score_means),
+#                 mth = rep(c("Clim.", "COSMO", "PP"), each = 5),
+#                 cat = c("All", "Cat1", "Cat2", "Cat3", "Cat4"))
+#ggplot(df) + geom_point(aes(x = cat, y = s, col = mth, shape = mth)) +
+#  scale_x_discrete(name = NULL) +
+#  scale_y_continuous(name = "Threshold-weighted Variogram Score") +
+#  theme_bw() +
+#  theme(legend.justification = c(1, 1), legend.position = c(0.99, 0.99),
+#        legend.title = element_blank())
+@
+
+In both cases, the weight function is chosen to emphasise the heat events defined in Table \ref{tab:WarningLevels}; further details can be found in \cite{AllenEtAl2023}. These results suggest that although the climatological forecasts perform worst when interest is on all outcomes, these forecasts result in lower scores when interest is on more extreme heat events. The COSMO-E forecasts tend to perform worst with respect to these outcomes.
+
+While weighted scoring rules allow the competing forecast strategies to be compared when predicting particular outcomes, they cannot be used to identify \textit{why} particular forecasts outperform others. To this end, conditional PIT histograms and reliability diagrams assess whether or not the forecast distributions are calibrated when predicting these outcomes. Figure \ref{fig:cpit} suggests that the COSMO-E forecasts severely over-predict the severity of daily mean temperatures, whereas this is corrected by the statistical post-processing model.
+
+Conditional PIT values focus on forecast performance given that an outcome of interest has occurred. However, they do not assess how well the forecast distributions can predict whether or not these outcomes will occur. This is a binary forecasting problem, and forecasts for the event occurrence can therefore be evaluated using reliability diagrams.
+
+
+
+\begin{figure}[t!]
+<<cpit_hist, echo=FALSE, dev='pdf', fig.width=9, fig.height=6, fig.align="center", out.width = "\\linewidth">>=
+n_bins <- 10 # select number of bins in the histogram
+lead <- 3 # select lead time
+threshold <- 15
+
+# get pit values
+cpit_clim <- cpit_norm(obs_dat[lead, ], clim_mean[lead, ], clim_sd[lead, ], a = threshold)
+cpit_raw <- cpit_norm(obs_dat[lead, ], ens_mean[lead, ], ens_sd[lead, ], a = threshold)
+cpit_pp <- cpit_norm(obs_dat[lead, ], pp_mean[lead, ], pp_sd[lead, ], a = threshold)
+
+p_c <- pit_hist(cpit_clim, n_bins, ranks = F, title = paste("Climatology: T >", threshold), ymax = 0.4)
+p_r <- pit_hist(cpit_raw, n_bins, ranks = F, title = paste("COSMO: T >", threshold), ymax = 0.4)
+p_p <- pit_hist(cpit_pp, n_bins, ranks = F, title = paste("Post-processed: T >", threshold), ymax = 0.4)
+
+p_c_rd <- pit_reldiag(cpit_clim, region_level = 0.99)
+p_r_rd <- pit_reldiag(cpit_raw, region_level = 0.99)
+p_p_rd <- pit_reldiag(cpit_pp, region_level = 0.99)
+
+p_clim <- 1 - pnorm(threshold, clim_mean[lead, ], clim_sd[lead, ])
+p_raw <- rowMeans(ens_raw[lead, , ] > threshold)
+p_pp <- 1 - pnorm(threshold, pp_mean[lead, ], pp_sd[lead, ])
+
+# plot reliability diagrams
+#exc_obs <- as.numeric(obs_dat[lead, ] > threshold)
+#reliabilitydiag::reliabilitydiag(data.frame(Clim = p_clim, Raw = p_raw, PP = p_pp), y = exc_obs, xtype = "continuous")
+
+gridExtra::grid.arrange(p_c, p_r, p_p, p_c_rd, p_r_rd, p_p_rd, nrow = 2)
+@
+\caption{Conditional PIT histograms and reliability diagrams for the three forecast strategies when interest is on daily mean temperatures that exceed 15 degrees Celcius.}
+\label{fig:cpit}
+\end{figure}
+
+
+\section{Discussion}\label{sec:discussion}
+
+This vignette describes the weighted forecast verification tools discussed by \cite{AllenEtAl2023}, and reproduces the results therein. Code to achieve this is available in the accompanying \pkg{R} package. This package includes weighted scoring rules, particularly for parametric forecast distributions, as well as functions to plot PIT values and conditional PIT values using both histograms and reliability diagrams. The package is still in development, and there are several possible extensions that could be made.
+
+Firstly, the package currently only contains functionality to apply the vertically re-scaled CRPS to the normal distribution, whereas it should be straightforward to calculate this score for alternative parametric families, such as the logistic and Student's $t$ distributions. Moreover, while \pkg{scoringRules} allows the threshold- and outcome-weighted CRPS to be applied to forecasts in the form of a predictive sample, this is currently not available for the vertically re-scaled CRPS (though code does exist to achieve this at \url{https://github.com/sallen12/weighted_mv_scores}).
+
+This package also contains several reliability indices to quantify the deviation between a sample of ranks and the uniform distribution over these ranks; these provide a single measure of forecast miscalibration. Currently, however, these are based on ranks, and cannot be applied to PIT values. Measures of deviation between PIT values and the standard uniform distribution, e.g. based on entropy or maximum mean discrepancies, would also be useful in practice, and should be straightforward to incorporate here.
+
+Finally, \cite{AllenEtAl2023} additionally discuss how conditional multivariate rank and PIT histograms could be constructed. There is currently no software that contains the functionality to implement checks for multivariate calibration, and this could relatively easily be incorporated into this package, with the ultimate goal of providing a complete collection of methods to assess probabilistic forecast calibration. This could include, for example: reliability diagrams, rank histograms, (conditional) PIT histograms, (conditional) PIT reliability diagrams, (conditional) multivariate rank histograms, reliability indices, tests for calibration, sequential measures of calibration, functional-calibration reliability diagrams, and proper score decompositions, among other things.
+
+
+%% Bibliography
+\bibliography{bibliography}
+
+\end{document}
+
