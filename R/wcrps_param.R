@@ -4,6 +4,7 @@
 #' @param mean,sd,location,scale,df,ncp vector of parameters corresponding
 #'  to the parametric predictive distributions.
 #' @param a,b numeric; lower and upper threshold defining the interval of outcomes that are of interest.
+#' @param x0 	numeric value at which to centre the vertically re-scaled CRPS.
 #' @param BS logical specifying whether the outcome-weighted scores should be complemented with the Brier score.
 #'
 #' @details
@@ -140,33 +141,61 @@ owcrps_t <- function(y, df, ncp = 0, a = -Inf, b = Inf, BS = T){
 
 #' @rdname wcrps_param
 #' @export
-vrcrps_norm <- function(y, mean = 0, sd = 1, a = -Inf){
-  # does not use b
-  t <- a
-  y_star <- pmax(y, t)
-  w_y <- as.numeric(y > t)
+vrcrps_norm <- function(y, mean = 0, sd = 1, a = -Inf, b = Inf, x0 = 0){
 
-  Ft <- pnorm(t, mean = mean, sd = sd)
-  Fys <- pnorm(y_star, mean = mean, sd = sd)
-  F0 <- pnorm(0, mean = mean, sd = sd)
-  Ft_sq2 <- pnorm(t, mean = mean, sd = sd/sqrt(2))
-  dt <- dnorm(t, mean = mean, sd = sd)
-  dys <- dnorm(y_star, mean = mean, sd = sd)
-  d0 <- dnorm(0, mean = mean, sd = sd)
+  b_min <- pmin(y, b)
+  b_max <- pmax(y, b)
+  a_min <- pmin(y, a)
+  a_max <- pmax(y, a)
 
-  o1 <- (y - mean)*(2*Fys - 1 - Ft)
-  o2 <- (sd^2)*(2*dys - dt)
-  o3 <- sd*(1 - Ft_sq2)/sqrt(pi)
-  o4 <- (sd^2)*dt*(1 - Ft)
+  b_min_x0 <- pmin(x0, b)
+  b_max_x0 <- pmax(x0, b)
+  a_min_x0 <- pmin(x0, a)
+  a_max_x0 <- pmax(x0, a)
 
+  w_y <- as.numeric(y > a & y < b)
+
+
+  F_b <- pnorm(b, mean = mean, sd = sd)
+  F_a <- pnorm(a, mean = mean, sd = sd)
+
+  d_b <- dnorm(b, mean = mean, sd = sd)
+  d_a <- dnorm(a, mean = mean, sd = sd)
+
+  F_b_sq2 <- pnorm(b, mean = mean, sd = sd/sqrt(2))
+  F_a_sq2 <- pnorm(a, mean = mean, sd = sd/sqrt(2))
+
+  F_b_min <- pnorm(b_min, mean = mean, sd = sd)
+  F_b_max <- pnorm(b_max, mean = mean, sd = sd)
+  F_a_min <- pnorm(a_min, mean = mean, sd = sd)
+  F_a_max <- pnorm(a_max, mean = mean, sd = sd)
+
+  d_b_min <- dnorm(b_min, mean = mean, sd = sd)
+  d_b_max <- dnorm(b_max, mean = mean, sd = sd)
+  d_a_min <- dnorm(a_min, mean = mean, sd = sd)
+  d_a_max <- dnorm(a_max, mean = mean, sd = sd)
+
+  F_b_min_x0 <- pnorm(b_min_x0, mean = mean, sd = sd)
+  F_b_max_x0 <- pnorm(b_max_x0, mean = mean, sd = sd)
+  F_a_min_x0 <- pnorm(a_min_x0, mean = mean, sd = sd)
+  F_a_max_x0 <- pnorm(a_max_x0, mean = mean, sd = sd)
+
+  d_b_min_x0 <- dnorm(b_min_x0, mean = mean, sd = sd)
+  d_b_max_x0 <- dnorm(b_max_x0, mean = mean, sd = sd)
+  d_a_min_x0 <- dnorm(a_min_x0, mean = mean, sd = sd)
+  d_a_max_x0 <- dnorm(a_max_x0, mean = mean, sd = sd)
+
+  o1 <- (y - mean)*(F_b_min + F_a_max - F_b_max - F_a_min)
+  o2 <- (sd^2)*(d_b_min + d_a_max - d_b_max - d_a_min)
+  o3 <- sd*(F_b_sq2 - F_a_sq2)/sqrt(pi)
+  o4 <- (sd^2)*(d_b + d_a)*(F_b - F_a)
   obj1 <- w_y*(o1 + o2) - o3 + o4
-  if(t <= 0){
-    obj2_1 <- mean*(1 - Ft - 2*F0) + (sd^2)*(2*d0 - dt)
-  }else{
-    obj2_1 <- mean*(1 - Ft) + (sd^2)*dt
-  }
 
-  obj2 <- (obj2_1 - abs(y)*w_y)*((1 - Ft) - w_y)
+  o1 <- (x0 - mean)*(F_b_min_x0 + F_a_max_x0 - F_b_max_x0 - F_a_min_x0)
+  o2 <- (sd^2)*(d_b_min_x0 + d_a_max_x0 - d_b_max_x0 - d_a_min_x0)
+  obj2_1 <- o1 + o2
+
+  obj2 <- (obj2_1 - abs(y - x0)*w_y)*((F_b - F_a) - w_y)
 
   obj <- obj1 + obj2
 

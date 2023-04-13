@@ -23,7 +23,7 @@ twcrps_t(y, df, ncp = 0, a = -Inf, b = Inf)
 
 owcrps_t(y, df, ncp = 0, a = -Inf, b = Inf, BS = T)
 
-vrcrps_norm(y, mean = 0, sd = 1, a = -Inf, b = -Inf)
+vrcrps_norm(y, mean = 0, sd = 1, a = -Inf, b = Inf, x0 = 0)
 }
 \arguments{
 \item{y}{vector of observations.}
@@ -34,6 +34,8 @@ vrcrps_norm(y, mean = 0, sd = 1, a = -Inf, b = -Inf)
 
 \item{mean, sd, location, scale, df, ncp}{vector of parameters corresponding
 to the parametric predictive distributions.}
+
+\item{x0}{numeric value at which to centre the vertically re-scaled CRPS.}
 }
 \value{
 vector of weighted score values.
