@@ -4,6 +4,7 @@
 #' of PIT values.
 #'
 #' @param z vector of pit values.
+#' @param ranks logical specifying whether the input are ranks (TRUE) or PIT values (FALSE).
 #' @param resampling logical specifying whether resampling should be used to calculate consistency regions.
 #' @param n_resamples number of resamples to use when calculating consistency regions.
 #' @param region_level significance level of the consistency regions.
@@ -68,7 +69,11 @@
 #' pit_hist(z = fc_od, ranks = FALSE, title = "Example 4")
 #'
 #' @export
-pit_reldiag <- function(z, resampling = TRUE, n_resamples = 1000, region_level = 0.9, title = NULL){
+pit_reldiag <- function(z, ranks = FALSE, resampling = TRUE, n_resamples = 1000, region_level = 0.9, title = NULL){
+  if (ranks) {
+    z <- (z + runif(length(z)) - 1)/max(z) # convert ranks to PIT values
+  }
+
   dist_pit = ecdf(z)
 
   x <- seq(0, 1, 0.01)

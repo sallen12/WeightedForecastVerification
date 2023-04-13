@@ -6,6 +6,7 @@
 \usage{
 pit_reldiag(
   z,
+  ranks = FALSE,
   resampling = TRUE,
   n_resamples = 1000,
   region_level = 0.9,
@@ -14,6 +15,8 @@ pit_reldiag(
 }
 \arguments{
 \item{z}{vector of pit values.}
+
+\item{ranks}{logical specifying whether the input are ranks (TRUE) or PIT values (FALSE).}
 
 \item{resampling}{logical specifying whether resampling should be used to calculate consistency regions.}
 
