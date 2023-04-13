@@ -883,5 +883,23 @@ Finally, \cite{AllenEtAl2023} additionally discuss how conditional multivariate 
 %% Bibliography
 \bibliography{bibliography}
 
+\section*{Appendix: Analytical formulae for weighted scores}
+
+\subsection{Vertically re-scaled CRPS}
+
+Suppose the forecast is a normal distribution with mean $\mu$ and standard deviation $\sigma$, and that we observe the value $y$. Consider the weight function $w(z) = \ind\{a < z < b\}$, and let $x_{0} \in \R$. Additionally, let $a^{+} = \mathrm{max}(y, a)$, $a^{-} = \mathrm{min}(y, a)$, $b^{+} = \mathrm{max}(y, b)$, $b^{-} = \mathrm{min}(y, b)$, and $a_{0}^{+} = \mathrm{max}(x_{0}, a)$, $a_{0}^{-} = \mathrm{min}(x_{0}, a)$, $b_{0}^{+} = \mathrm{max}(x_{0}, b)$, $b_{0}^{-} = \mathrm{min}(x_{0}, b)$.
+
+Then, the vertically re-scaled CRPS for this forecast distribution can be written analytically as
+
+\begin{equation*}
+\begin{split}
+  \mathrm{vrCRPS}(F, y) =& w(y) \left\{ (y - \mu) \left[ F(b^{-}) + F(a^{+}) - F(b^{+}) - F(a^{-}) \right] \right. \\
+  & + \left. \sigma^{2} \left[ f(b^{-}) + f(a^{+}) - f(b^{+}) - f(a^{-}) \right] \right\} \\
+  & - \frac{\sigma}{\sqrt{\pi}} \left[ \Phi \left( \sqrt{2} \frac{b - \mu}{\sigma} \right) - \Phi \left( \sqrt{2} \frac{a - \mu}{\sigma} \right) \right] + \sigma^{2} \left[ f(b) + f(a) \right] \left[ F(b) - F(a) \right] \\
+  & + \left\{ (x_{0} - \mu) \left[ F(b_{0}^{-}) + F(a_{0}^{+}) - F(b_{0}^{+}) - F(a_{0}^{-}) \right] + \right. \\
+  & \left. \sigma^{2} \left[ f(b_{0}^{-}) + f(a_{0}^{+}) - f(b_{0}^{+}) - f(a_{0}^{-}) \right] - |y - x_{0}|w(y) \right\} \left\{ F(b) - F(a) - w(y) \right\}.
+\end{split}
+\end{equation*}
+
 \end{document}
 
