@@ -140,7 +140,8 @@ owcrps_t <- function(y, df, ncp = 0, a = -Inf, b = Inf, BS = T){
 
 #' @rdname wcrps_param
 #' @export
-vrcrps_norm <- function(y, mean = 0, sd = 1, a = -Inf, b = -Inf){
+vrcrps_norm <- function(y, mean = 0, sd = 1, a = -Inf){
+  # does not use b
   t <- a
   y_star <- pmax(y, t)
   w_y <- as.numeric(y > t)
