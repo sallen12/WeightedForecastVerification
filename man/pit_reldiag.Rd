@@ -14,7 +14,7 @@ pit_reldiag(
 )
 }
 \arguments{
-\item{z}{vector of pit values.}
+\item{z}{vector or list of vector of pit values.}
 
 \item{ranks}{logical specifying whether the input are ranks (TRUE) or PIT values (FALSE).}
 
@@ -47,7 +47,7 @@ Instead, it has been argued that it is more appropriate to display the (empirica
 distribution function of the PIT values, rather than their (empirical) density function.
 If the PIT values are independent samples from a standard uniform distribution,
 as is the case for a probabilistically calibrated forecast, then this distribution
-function should lie on the line y=x, subject to sampling variation.
+function should lie on the line y = x, subject to sampling variation.
 This permits a straightforward assessment of whether or not forecasts are
 calibrated, and deviations from the diagonal can be used to identify systematic
 errors that occur in the forecasts. These plots of the PIT values' distribution function
@@ -62,6 +62,11 @@ display these regions, we can set the \code{resampling} argument of the
 These consistency regions are obtained using parametric bootstrap resampling,
 with the number of resamples given by the argument \code{n_resamples}, and the
 significance level by the argument \code{region_level}.
+
+\code{z} is either a vector of PIT values, or a list of vectors of PIT values to
+be plotted together. If \code{z} is a list and \code{resampling = TRUE}, resampling
+is performed based on the number of elements in the first element of \code{z}.
+This implicitly assumes the number of elements is the same in all elements of \code{z}.
 }
 \examples{
 fc_cal <- runif(1000)
@@ -72,12 +77,15 @@ fc_ud <- rbeta(1000, shape1 = 0.5, shape2 = 0.5)
 pit_reldiag(z = fc_ud, title = "Example 2")
 pit_hist(z = fc_ud, ranks = FALSE, title = "Example 2")
 
-pit_reldiag(z = fc_ud, region_level = 0.5, title = "Example 3")
-pit_reldiag(z = fc_ud, region_level = 0.99, title = "Example 3")
+pit_reldiag(z = fc_ud, region_level = 0.5, title = "Example 2")
+pit_reldiag(z = fc_ud, region_level = 0.99, title = "Example 2")
 
 fc_od <- rbeta(1000, shape1 = 2, shape2 = 2)
-pit_reldiag(z = fc_od, resampling = FALSE, title = "Example 4")
-pit_hist(z = fc_od, ranks = FALSE, title = "Example 4")
+pit_reldiag(z = fc_od, resampling = FALSE, title = "Example 3")
+pit_hist(z = fc_od, ranks = FALSE, title = "Example 3")
+
+z <- list(Calibrated = fc_cal, Underdispersed = fc_ud, Overdispersed = fc_od)
+pit_reldiag(z = z, title = "Example 4")
 
 }
 \references{
