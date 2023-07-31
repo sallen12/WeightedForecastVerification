@@ -9,6 +9,7 @@
 #' @param title optional title.
 #' @param ymax optional upper limit of the y axis.
 #' @param xlab,ylab optional x and y axes labels.
+#' @param xticks,yticks option to remove x and y ticks.
 #' @param linecol optional colour of horizontal line (default is red).
 #' @param linetype optional type of horizontal line (default is dashed).
 #'
@@ -87,7 +88,9 @@
 #'
 #' @export
 pit_hist <- function(z, bins = NULL, ranks = TRUE, title = NULL, ymax = NULL,
-                     ylab = "Rel. Freq.", xlab = "Rank", linecol = "red", linetype = "dashed") {
+                     ylab = "Rel. Freq.", xlab = "Rank",
+                     yticks = TRUE, xticks = TRUE,
+                     linecol = "red", linetype = "dashed") {
 
   if (is.null(bins)) {
     if(!ranks) {
@@ -106,12 +109,17 @@ pit_hist <- function(z, bins = NULL, ranks = TRUE, title = NULL, ymax = NULL,
   if (is.null(linecol) || is.null(linetype)) {linecol <- "red"; linetype <- "dashed"; alpha <- 0}
 
   df <- data.frame(freq = rank_freq, rank = as.factor(1:bins))
-  ggplot2::ggplot(df, ggplot2::aes(x = rank, y = freq)) +
+  out_plot <- ggplot2::ggplot(df, ggplot2::aes(x = rank, y = freq)) +
     ggplot2::geom_bar(stat = "identity") +
     ggplot2::geom_hline(ggplot2::aes(yintercept = 1/bins), col = linecol, alpha = alpha, lty = linetype) +
     ggplot2::scale_x_discrete(name = xlab) +
     ggplot2::scale_y_continuous(name = ylab, limits = c(0, ymax), expand = c(0, 0)) +
     ggplot2::theme_bw() +
-    ggplot2::theme(legend.title = ggplot2::element_blank(), panel.grid = ggplot2::element_blank()) +
+    ggplot2::theme(legend.title = ggplot2::element_blank(), panel.grid = ggplot2::element_blank(), ...) +
     ggplot2::ggtitle(title)
+  if (!yticks) out_plot <- out_plot + ggplot2::theme(axis.ticks.y = ggplot2::element_blank(),
+                                                     axis.text.y = ggplot2::element_blank())
+  if (!xticks) out_plot <- out_plot + ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
+                                                     axis.text.x = ggplot2::element_blank())
+  return(out_plot)
 }

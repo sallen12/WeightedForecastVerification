@@ -12,6 +12,8 @@ pit_hist(
   ymax = NULL,
   ylab = "Rel. Freq.",
   xlab = "Rank",
+  yticks = TRUE,
+  xticks = TRUE,
   linecol = "red",
   linetype = "dashed"
 )
@@ -28,6 +30,8 @@ pit_hist(
 \item{ymax}{optional upper limit of the y axis.}
 
 \item{xlab, ylab}{optional x and y axes labels.}
+
+\item{xticks, yticks}{option to remove x and y ticks.}
 
 \item{linecol}{optional colour of horizontal line (default is red).}
 
