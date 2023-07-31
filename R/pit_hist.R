@@ -9,6 +9,8 @@
 #' @param title optional title.
 #' @param ymax optional upper limit of the y axis.
 #' @param xlab,ylab optional x and y axes labels.
+#' @param linecol optional colour of horizontal line (default is red).
+#' @param linetype optional type of horizontal line (default is dashed).
 #'
 #' @details
 #'
@@ -42,15 +44,30 @@
 #' If a PIT histogram is desired, then the user should set \code{ranks = FALSE}, and
 #' the vector \code{z} should contain values between zero and one.
 #'
+#' The rank and PIT histograms display a dashed red line at the height of
+#' a uniform histogram. The colour of this line can be altered using the argument
+#' \code{linecol}, while the type of this line can be altered using \code{linetype}.
+#' \code{linecol} can be either a colour string (e.g. \code{"red"}) or a hex code
+#' (e.g. \code{"#FF0000"}). \code{linetype} can be any valid ggplot linetype,
+#' (e.g. \code{"solid"}, \code{"dashed"}, \code{"dotted"}, \code{"dotdash"}). The
+#' uniformity line can be omitted by setting either of these arguments to \code{NULL}.
+#'
+#'
 #' @return ggplot object containing the rank/PIT histogram
 #'
 #' @author Sam Allen
 #'
 #' @references
 #'
-#' Dawid, A. P. (1984): `Present position and potential developments: Some personal views: Statistical theory: The prequential approach'. \emph{Journal of the Royal Statistical Society: Series A (General)} 147, 278-290. \doi{10.2307/2981683}
+#' Dawid, A. P. (1984):
+#' `Present position and potential developments: Some personal views: Statistical theory: The prequential approach'.
+#' \emph{Journal of the Royal Statistical Society: Series A (General)} 147, 278-290.
+#' \doi{10.2307/2981683}
 #'
-#' Gneiting, T., Balabdaoui, F., and Raftery, A. E. (2007): `Probabilistic forecasts, calibration and sharpness'. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 69, 243-268. \doi{10.1111/j.1467-9868.2007.00587.x}
+#' Gneiting, T., Balabdaoui, F., and Raftery, A. E. (2007):
+#' `Probabilistic forecasts, calibration and sharpness'.
+#' \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 69, 243-268.
+#' \doi{10.1111/j.1467-9868.2007.00587.x}
 #'
 #' @examples
 #'
@@ -59,9 +76,9 @@
 #' fc_ud <- sample(1:10, 1000, replace = TRUE, prob = abs(seq(0, 1, length.out=10) - 0.5))
 #' fc_od <- sample(1:10, 1000, replace = TRUE, prob = 1 - abs(seq(0, 1, length.out=10) - 0.5))
 #'
-#' pit_hist(z = fc_cal, title = "Calibrated example", ymax = 0.3)
-#' pit_hist(z = fc_ud, title = "Under-dispersed example", ymax = 0.3)
-#' pit_hist(z = fc_od, title = "Over-dispersed example", ymax = 0.3)
+#' pit_hist(z = fc_cal, title = "Calibrated example", ymax = 0.3, linecol = "blue")
+#' pit_hist(z = fc_ud, title = "Under-dispersed example", ymax = 0.3, linetype = "solid")
+#' pit_hist(z = fc_od, title = "Over-dispersed example", ymax = 0.3, linecol = NULL)
 #'
 #' # PIT histograms (ranks = FALSE)
 #' pit_hist(z = runif(1000), ranks = FALSE, title = "Calibrated example", ymax = 0.5, xlab = "")
@@ -69,9 +86,10 @@
 #' pit_hist(z = rbeta(1000, shape1 = 2, shape2 = 2), bins = 20, ranks = FALSE, title = "Over-dispersed example")
 #'
 #' @export
-pit_hist <- function(z, bins = NULL, ranks = TRUE, title = NULL, ymax = NULL, ylab = "Rel. Freq.", xlab = "Rank"){
+pit_hist <- function(z, bins = NULL, ranks = TRUE, title = NULL, ymax = NULL,
+                     ylab = "Rel. Freq.", xlab = "Rank", linecol = "red", linetype = "dashed") {
 
-  if(is.null(bins)) {
+  if (is.null(bins)) {
     if(!ranks) {
       bins <- 10
     }else {
@@ -79,15 +97,18 @@ pit_hist <- function(z, bins = NULL, ranks = TRUE, title = NULL, ymax = NULL, yl
     }
   }
 
-  if(!ranks) { z <- floor(z*bins) + 1; z[z > bins] <- bins}
+  if (!ranks) z <- floor(z*bins) + 1; z[z > bins] <- bins
 
   rank_freq <- sapply(1:bins, function(i) mean(z == i, na.rm = T))
-  if(is.null(ymax)) ymax <- 1.5*max(rank_freq)
+  if (is.null(ymax)) ymax <- 1.5*max(rank_freq)
+
+  alpha <- 1
+  if (is.null(linecol) || is.null(linetype)) {linecol <- "red"; linetype <- "dashed"; alpha <- 0}
 
   df <- data.frame(freq = rank_freq, rank = as.factor(1:bins))
   ggplot2::ggplot(df, ggplot2::aes(x = rank, y = freq)) +
     ggplot2::geom_bar(stat = "identity") +
-    ggplot2::geom_hline(ggplot2::aes(yintercept = 1/bins), col = "red", lty = "dashed") +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = 1/bins), col = linecol, alpha = alpha, lty = linetype) +
     ggplot2::scale_x_discrete(name = xlab) +
     ggplot2::scale_y_continuous(name = ylab, limits = c(0, ymax), expand = c(0, 0)) +
     ggplot2::theme_bw() +
