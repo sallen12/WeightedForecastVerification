@@ -113,7 +113,7 @@ pit_reldiag <- function(z, ranks = FALSE, resampling = TRUE, n_resamples = 1000,
       ggplot2::geom_step(ggplot2::aes(x = x, y = Fx)) +
       ggplot2::geom_abline(ggplot2::aes(slope = 1, intercept = 0), lty = "dotted") +
       ggplot2::scale_x_continuous(name = expression(z), limits = c(0, 1), expand = c(0, 0)) +
-      ggplot2::scale_y_continuous(name = expression("fraction of PIT values" <= z), limits = c(0, 1), expand = c(0, 0)) +
+      ggplot2::scale_y_continuous(name = "fraction of PIT values \u2264 z", limits = c(0, 1), expand = c(0, 0)) +
       ggplot2::theme_bw() +
       ggplot2::theme(legend.title = ggplot2::element_blank(), panel.grid = ggplot2::element_blank()) +
       ggplot2::ggtitle(title)
