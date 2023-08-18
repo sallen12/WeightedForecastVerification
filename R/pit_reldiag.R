@@ -80,7 +80,11 @@
 pit_reldiag <- function(z, ranks = FALSE, resampling = TRUE, n_resamples = 1000, region_level = 0.9, title = NULL){
   if (is.list(z)) {
 
-    if (ranks) z <- lapply(z, function(zz) (zz + runif(length(zz)) - 1)/max(zz)) # convert ranks to PIT values
+    # convert ranks to PIT values
+    if (identical(length(ranks), 1L)) ranks <- rep(ranks, length(z))
+    for (i in seq_along(z)) {
+      if (ranks[i]) z[[i]] <- (z[[i]] + runif(length(z[[i]])) - 1)/max(z[[i]])
+    }
 
     if (is.null(names(z))) names(z) <- 1:length(z)
 
@@ -126,6 +130,7 @@ pit_reldiag <- function(z, ranks = FALSE, resampling = TRUE, n_resamples = 1000,
 
     if (is.list(z)) {
       len <- lengths(z[[1]])
+      message("the first element of the list z is used to calculate the consistency intervals")
     } else {
       len <- length(z)
     }
@@ -146,6 +151,6 @@ pit_reldiag <- function(z, ranks = FALSE, resampling = TRUE, n_resamples = 1000,
                                                         fill = "lightblue", alpha = 0.3)
   }
 
-  plot_reldiag
+  return(plot_reldiag)
 
 }
