@@ -104,6 +104,10 @@ pit_hist <- function(z, bins = NULL, ranks = TRUE, title = NULL, ymax = NULL,
 
   rank_freq <- sapply(1:bins, function(i) mean(z == i, na.rm = T))
   if (is.null(ymax)) ymax <- 1.5*max(rank_freq)
+  if (any(rank_freq > ymax)) {
+    message(paste(sum(rank_freq > ymax), "bin(s) have been truncated at ymax"))
+    rank_freq[rank_freq > ymax] <- ymax
+  }
 
   alpha <- 1
   if (is.null(linecol) || is.null(linetype)) {linecol <- "red"; linetype <- "dashed"; alpha <- 0}
