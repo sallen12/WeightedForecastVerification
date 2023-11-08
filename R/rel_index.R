@@ -4,6 +4,8 @@
 #'
 #' @param z vector of ranks or PIT values.
 #' @param bins number of bins in the histogram.
+#' @param ranks logical specifying whether \code{z} is ranks (\code{TRUE}) or PIT
+#'  values (\code{FALSE}).
 #' @param method method to measure the flatness of the histogram.
 #'
 #' @details

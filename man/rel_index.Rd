@@ -11,6 +11,9 @@ rel_index(z, bins = NULL, ranks = TRUE, method = "absolute")
 
 \item{bins}{number of bins in the histogram.}
 
+\item{ranks}{logical specifying whether \code{z} is ranks (\code{TRUE}) or PIT
+values (\code{FALSE}).}
+
 \item{method}{method to measure the flatness of the histogram.}
 }
 \value{
