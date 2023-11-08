@@ -57,7 +57,7 @@
 cpit_sample <- function(y, dat, a = -Inf, b = Inf, bw = NULL){
   if (is.null(bw)) bw <- apply(dat, 1, bw.nrd)
   message("Computing conditional PIT values using kernel density estimation")
-  pit <- sapply(seq_along(y), function(i) p_tr_kde(y[i], m = dat[i, ], bw[i], a, b))
+  pit <- sapply(seq_along(y), function(i) p_tr_kde(y[i], m_vec = dat[i, ], s_vec = bw[i], a, b))
   pit[y <= a | y >= b] <- NA
   return(pit)
 }

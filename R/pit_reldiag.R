@@ -95,7 +95,7 @@ pit_reldiag <- function(z, ranks = FALSE, resampling = TRUE, n_resamples = 1000,
                      Fx = as.vector(sapply(dist_pit, function(edf) edf(x))),
                      mth = rep(names(z), each = length(x)))
     plot_reldiag <- ggplot2::ggplot(df) +
-      ggplot2::geom_step(ggplot2::aes(x = x, y = Fx, col = as.factor(mth))) +
+      ggplot2::geom_step(ggplot2::aes_string(x = "x", y = "Fx", col = "as.factor(mth)")) +
       ggplot2::geom_abline(ggplot2::aes(slope = 1, intercept = 0), lty = "dotted") +
       ggplot2::scale_x_continuous(name = expression(z), limits = c(0, 1), expand = c(0, 0)) +
       ggplot2::scale_y_continuous(name = "fraction of PIT values \u2264 z", limits = c(0, 1), expand = c(0, 0)) +
@@ -114,7 +114,7 @@ pit_reldiag <- function(z, ranks = FALSE, resampling = TRUE, n_resamples = 1000,
 
     x <- seq(0, 1, 0.01)
     plot_reldiag <- ggplot2::ggplot(data.frame(x = x, Fx = dist_pit(x))) +
-      ggplot2::geom_step(ggplot2::aes(x = x, y = Fx)) +
+      ggplot2::geom_step(ggplot2::aes_string(x = "x", y = "Fx")) +
       ggplot2::geom_abline(ggplot2::aes(slope = 1, intercept = 0), lty = "dotted") +
       ggplot2::scale_x_continuous(name = expression(z), limits = c(0, 1), expand = c(0, 0)) +
       ggplot2::scale_y_continuous(name = "fraction of PIT values \u2264 z", limits = c(0, 1), expand = c(0, 0)) +

@@ -96,8 +96,8 @@ pit_hist(z = fc_od, title = "Over-dispersed example", ymax = 0.3, linecol = NULL
 
 # PIT histograms (ranks = FALSE)
 pit_hist(z = runif(1000), ranks = FALSE, title = "Calibrated example", ymax = 0.5, xlab = "")
-pit_hist(z = rbeta(1000, shape1 = 0.5, shape2 = 0.5), ranks = FALSE, title = "Under-dispersed example")
-pit_hist(z = rbeta(1000, shape1 = 2, shape2 = 2), bins = 20, ranks = FALSE, title = "Over-dispersed example")
+pit_hist(z = rbeta(1000, 0.5, 0.5), ranks = FALSE, title = "Under-dispersed")
+pit_hist(z = rbeta(1000, 2, 2), bins = 20, ranks = FALSE, title = "Over-dispersed")
 
 }
 \references{

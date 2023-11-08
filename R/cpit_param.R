@@ -54,19 +54,20 @@
 #' cpit_norm(y = y, mean = mu, sd = 0.5)
 #' pnorm(q = y, mean = mu, sd = 0.5) # pnorm() returns the same values if a = -Inf and b = Inf
 #' cpit_norm(y = y, mean = mu, sd = 0.5, a = 0) # restrict attention to values that exceed 0
-#' cpit_norm(y = y, mean = mu, sd = 0.5, a = -1, b = 1) # restrict attention to values between -1 and 1
+#' cpit_norm(y = y, mean = mu, sd = 0.5, a = -1, b = 1) # restrict attention to between -1 and 1
 #'
 #' mu <- rnorm(10000, mean = 0, sd = 5)
 #' y <- rnorm(10000, mean = mu, sd = 1)
 #'
-#' pit_hist(cpit_norm(y = y, mean = mu, sd = 1), pitvals = TRUE) # PIT hist
+#' pit_hist(cpit_norm(y = y, mean = mu, sd = 1), ranks = FALSE) # PIT hist
 #'
-#' pit_hist(cpit_norm(y = y, mean = mu, sd = 1, a = 0), pitvals = TRUE) # cPIT hist
-#' pit_hist(cpit_norm(y = y, mean = mu + 1, sd = 1, a = 0), pitvals = TRUE) # positive bias
-#' pit_hist(cpit_norm(y = y, mean = mu - 1, sd = 1, a = 0), pitvals = TRUE) # negative bias
-#' pit_hist(cpit_t(y = y, df = 1, a = 0), pitvals = TRUE)
+#' pit_hist(cpit_norm(y = y, mean = mu, sd = 1, a = 0), ranks = FALSE) # cPIT hist
+#' pit_hist(cpit_norm(y = y, mean = mu + 1, sd = 1, a = 0), ranks = FALSE) # positive bias
+#' pit_hist(cpit_norm(y = y, mean = mu - 1, sd = 1, a = 0), ranks = FALSE) # negative bias
+#' pit_hist(cpit_t(y = y, df = 1, a = 0), ranks = FALSE)
 #'
 #' @name cpit_param
+#' @import stats
 
 #' @rdname cpit_param
 #' @export

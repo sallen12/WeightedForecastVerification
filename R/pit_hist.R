@@ -83,8 +83,8 @@
 #'
 #' # PIT histograms (ranks = FALSE)
 #' pit_hist(z = runif(1000), ranks = FALSE, title = "Calibrated example", ymax = 0.5, xlab = "")
-#' pit_hist(z = rbeta(1000, shape1 = 0.5, shape2 = 0.5), ranks = FALSE, title = "Under-dispersed example")
-#' pit_hist(z = rbeta(1000, shape1 = 2, shape2 = 2), bins = 20, ranks = FALSE, title = "Over-dispersed example")
+#' pit_hist(z = rbeta(1000, 0.5, 0.5), ranks = FALSE, title = "Under-dispersed")
+#' pit_hist(z = rbeta(1000, 2, 2), bins = 20, ranks = FALSE, title = "Over-dispersed")
 #'
 #' @export
 pit_hist <- function(z, bins = NULL, ranks = TRUE, title = NULL, ymax = NULL,
@@ -113,7 +113,7 @@ pit_hist <- function(z, bins = NULL, ranks = TRUE, title = NULL, ymax = NULL,
   if (is.null(linecol) || is.null(linetype)) {linecol <- "red"; linetype <- "dashed"; alpha <- 0}
 
   df <- data.frame(freq = rank_freq, rank = as.factor(1:bins))
-  out_plot <- ggplot2::ggplot(df, ggplot2::aes(x = rank, y = freq)) +
+  out_plot <- ggplot2::ggplot(df, ggplot2::aes_string(x = "rank", y = "freq")) +
     ggplot2::geom_bar(stat = "identity") +
     ggplot2::geom_hline(ggplot2::aes(yintercept = 1/bins), col = linecol, alpha = alpha, lty = linetype) +
     ggplot2::scale_x_discrete(name = xlab) +
