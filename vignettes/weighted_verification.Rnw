@@ -21,6 +21,13 @@
 \newcommand{\ind}{\mathbbm{1}}
 \newcommand{\dd}{\hspace{0.1cm} \mathrm{d}}
 
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{Weighted Forecast Verification}
+%\VignetteDepends{WeightedForecastVerification}
+%\VignetteKeywords{probabilistic forecasts, scoring rules, weighted scoring rules, calibration}
+%\VignettePackage{WeightedForecastVerification}
+%\VignetteEncoding{UTF-8}
+
 <<preliminaries, echo=FALSE, results='hide'>>=
 # Using knitr for manuscript
 library(knitr)
@@ -51,12 +58,12 @@ library(scoringRules)
 \author{Sam Allen\\University of Bern\\Oeschger Centre for Climate Change Research}
 \Plainauthor{Sam Allen}
 
-\title{Weighted verification tools to evaluate univariate and multivariate probabilistic forecasts}
-\Plaintitle{Weighted verification tools to evaluate univariate and multivariate probabilistic forecasts}
+\title{\pkg{WeightedForecastVerification}: Weighted Verification Tools to Evaluate Probabilistic Forecasts}
+\Plaintitle{WeightedForecastVerification: Weighted Verification Tools to Evaluate Probabilistic Forecasts}
 \Shorttitle{WeightedForecastVerification}
 
 \Abstract{
-  Probabilistic forecasts are often assessed and compared using proper scoring rules. To emphasise particular outcomes when evaluating probabilistic forecasts, various approaches have been proposed to construct weighted scoring rules, both in the univariate and multivariate setting. \cite{AllenEtAl2023} discuss and compare these different approaches, and illustrate how the theory underlying weighted scoring rules can also be applied when assessing forecast calibration. This vignette reproduces the results presented in this paper, and demonstrates how the accompanying R package allows these weighted verification tools to be implemented in practice.
+  Probabilistic forecasts are often assessed and compared using proper scoring rules. To emphasise particular outcomes when evaluating probabilistic forecasts, various approaches have been proposed to construct weighted scoring rules, both in the univariate and multivariate setting. \cite{AllenEtAl2023} discuss and compare these different approaches, and illustrate how the theory underlying weighted scoring rules can also be applied when assessing forecast calibration. This vignette reproduces the results presented in this paper, and demonstrates how the accompanying \proglang{R} package allows these weighted verification tools to be implemented in practice.
 }
 
 \Keywords{probabilistic forecast evaluation, proper scoring rules, PIT histograms, \proglang{R}}
@@ -77,16 +84,16 @@ library(scoringRules)
 
 \section{Introduction}\label{sec:intro}
 
-Methods to verify and evaluate forecasts are integral to the development and improvement of forecast systems. Traditionally, the evaluation of probabilistic forecasts focuses on two aspects of forecast performance: forecast accuracy and forecast calibration. Forecast accuracy is a measure of the agreement between a forecast and the corresponding observation, and is quantified using proper scoring rules. Scoring rules summarise forecast performance using a single numerical value, allowing competing forecasters to be ranked and compared objectively; proper scoring rules further encourage the forecaster to issue what they truly believe will occur \citep{GneitingRaftery2007}. Forecast calibration, on the other hand, considers to what extent forecasts are reliable, or trustworthy - for example, do the observed outcomes occur with the same probability with which they are predicted? This is typically assessed visually using graphical diagnostic tools, though statistical tests also exist to check calibration more rigorously.
+Methods to verify and evaluate forecasts are integral to the development and improvement of forecast systems. Traditionally, the evaluation of probabilistic forecasts focuses on two aspects of forecast performance: forecast accuracy and forecast calibration. Forecast accuracy is a measure of the agreement between a forecast and the corresponding observation, and can be quantified using proper scoring rules. Scoring rules summarise forecast performance using a single numerical value, allowing competing forecasters to be ranked and compared objectively; \emph{proper} scoring rules further encourage the forecaster to issue what they truly believe will occur \citep{GneitingRaftery2007}. Forecast calibration, on the other hand, considers to what extent forecasts are reliable, or trustworthy - for example, do the observed outcomes occur with the same probability with which they are predicted? This is typically assessed visually using graphical diagnostic tools, though statistical tests also exist to check calibration more rigorously.
 
-However, it is often the case that certain outcomes are of more interest than others: when predicting events that can have a high impact on the forecast user, for example. Hence, over the past decade or so, several approaches have been developed to target particular outcomes during forecast evaluation. This is typically achieved by incorporating a weight function into conventional methods. \cite{AllenEtAl2023} recently reviewed weighted verification tools, and the goal of this vignette is to demonstrate how the accompanying \proglang{R} package allows users to implement these tools in practical applications. The package is not complete, and some potential extensions to the existing functionality are discussed in the final section.
+However, it is often the case that certain outcomes are of more interest than others: when predicting events that can have a high impact on the forecast user, for example. Hence, over the past decade or so, several approaches have been developed to target particular outcomes during forecast evaluation. This is typically achieved by incorporating a weight function into conventional methods. \cite{AllenEtAl2023} recently reviewed weighted verification tools, and the goal of this vignette is to demonstrate how the accompanying \proglang{R} package allows users to implement these tools in practical applications. The package has not been submitted to CRAN, and is still in active development; some potential extensions to the existing functionality are discussed in the final section.
 
 
 \section{Weighted verification tools}
 
 \subsection{Weighted scoring rules}
 
-Scoring rules are functions that take a probabilistic forecast $F$ and an observation $y$ as inputs, and output a real (possibly non-finite) value that quantifies the forecast's accuracy. Scoring rules are typically negatively oriented, such that a lower score indicates a more accurate forecast, and a scoring rule $S$ is called proper with respect to a class of probability distributions $\mathcal{F}$ if
+Scoring rules are functions $S(F, y)$ that take a probabilistic forecast $F$ and an observation $y$ as inputs, and output a real (possibly non-finite) value that quantifies the forecast's accuracy. Scoring rules are typically negatively oriented, such that a lower score indicates a more accurate forecast, and a scoring rule $S$ is called proper with respect to a class of probability distributions $\mathcal{F}$ if
 \begin{equation}
     \E_{Y\sim G} S(G, Y) \leq \E_{Y\sim G} S(F, Y),
 \end{equation}
@@ -107,7 +114,7 @@ where $\| \cdot \|$ is the Euclidean distance in $\R^{d} $, and $X, X^{\prime} \
 \begin{equation}
     \mathrm{VS}_{p}(F, y) = \sum_{i=1}^{d}\sum_{j=1}^{d} h_{i, j} (\E_{F}|X_{i} - X_{j}|^{p} - |y_{i} - y_{j}|^{p})^{2},
 \end{equation}
-where $y = (y_{1}, \dots, y_{d}) \in \mathbbm{R}^{d}$, $X = (X_{1}, \dots, X_{d}) \sim F$, $h_{i, j}$ are non-negative scaling parameters, and $p > 0$ is the order of the score. Typically, $ p $ is chosen to be one half, and the scaling parameters $h_{i, j}$ are all set to one.
+where $y = (y_{1}, \dots, y_{d}) \in \mathbbm{R}^{d}$, $X = (X_{1}, \dots, X_{d}) \sim F$, $h_{i, j}$ are non-negative scaling parameters, and $p > 0$ is the order of the score. Typically, $ p $ is chosen to be one half, and the scaling parameters $h_{i, j}$ are either set to one, or, if there is some notion of distance between different dimensions, they are inversely proportional to this distance.
 
 These scoring rules all fit into the class of kernel scores, a general class of scoring rules based on conditionally negative definite (c.n.d.) kernels \citep{GneitingRaftery2007}. Letting $\mathcal{X}$ denote the set of possible outcomes, a c.n.d.~kernel is a symmetric function $\rho: \mathcal{X} \times \mathcal{X} \to \R$ for which
 \begin{equation}
@@ -186,7 +193,7 @@ These weighted multivariate scoring rules allow multivariate outcomes of interes
 
 Proper scoring rules condense forecast performance into a single numerical value, allowing competing forecasters to be ranked and compared. However, scoring rules do not readily determine whether a prediction system is trustworthy, in the sense that the observed outcomes are statistically consistent with the forecasts that were issued. If the forecasts do align with the observations, then the prediction system is said to reliable, or calibrated.
 
-For univariate outcomes, forecast calibration is typically assessed using probability integral transform (PIT) values. It is a well-known result that if the outcome $Y$ is a continuous random variable with cumulative distribution function $F$, then the random variable $F(Y)$ will follow the standard uniform distribution. Hence, if a forecaster issues a sequence of predictive distributions $F_{1}, \dots, F_{n}$, and observes a sequence of observations $y_{1}, \dots, y_{n}$, then the PIT values $F_{1}(y_{1}), \dots, F_{n}(y_{n})$ should resemble a sample from the standard uniform distribution if the forecaster is (probabilistically) calibrated. In this sense, calibration means that the observations can be interpreted as random draws from the forecast distributions. A simple extension exists when the forecast distributions are not continuous, such as in ensemble forecasting; note that PIT values provide a generalisation of the rank of the observation among a finite sample from the forecast distribution.
+For univariate outcomes, forecast calibration is typically assessed using probability integral transform (PIT) values. It is a well-known result that if the outcome $Y$ is a continuous random variable with cumulative distribution function $F$, then the random variable $F(Y)$ will follow the standard uniform distribution. Hence, if a forecaster issues a sequence of predictive distributions $F_{1}, \dots, F_{n}$, and observes a sequence of observations $y_{1}, \dots, y_{n}$, then the PIT values $F_{1}(y_{1}), \dots, F_{n}(y_{n})$ should resemble a sample from the standard uniform distribution if the forecaster is (probabilistically) calibrated. In this sense, calibration means that, on average, the observations can be interpreted as random draws from the forecast distributions. A simple extension exists when the forecast distributions are not continuous, such as in ensemble forecasting; note that PIT values provide a generalisation of the rank of the observation among a finite sample from the forecast distribution.
 
 While statistical tests exist to assess whether or not the PIT values resemble a sample from a standard uniform distribution, calibration is typically assessed graphically, using either a histogram \citep{GneitingEtAl2007} or a P-P plot \citep[also called a reliability diagram;][]{GneitingResin2021} of the PIT values. If the PIT values are indeed samples from the standard uniform distribution, then the PIT histogram will be flat, and the PIT reliability diagram will be a straight line along the diagonal (up to sampling variation); if this is not the case, then there is evidence to suggest that the forecasts are miscalibrated, and the behaviour of the deviations can be used to diagnose the nature of the forecast errors.
 
@@ -261,14 +268,17 @@ ggplot() + geom_line(data = df_lt, aes(x = y, y = s, col = mth, linetype = mth))
 \label{fig:scores_example}
 \end{figure}
 
-Weighted scoring rules can be implemented analogously for logistic and Student's $t$ distributions, e.g.
+Weighted scoring rules can be implemented analogously for Student's $t$ and logistic distributions,
 
 \begin{Code}
 twcrps_logis(y, location = 0, scale = 1, a = -Inf, b = Inf)
 owcrps_logis(y, location = 0, scale = 1, a = -Inf, b = Inf, BS = T)
+twcrps_t(y, df, ncp = 0, a = -Inf, b = Inf)
+owcrps_t(y, df, ncp = 0, a = -Inf, b = Inf, BS = T)
 \end{Code}
+where \code{location} and \code{scale} are location and scale parameters of the logistic distribution, and \code{df} and \code{ncp} are the degrees of freedom and non-centrality parameters of the Student's $t$ distribution.
 
-and weighted versions of the CRPS are similarly displayed for a standard logistic forecast distribution in Figure \ref{fig:scores_logis_example}.
+The weighted versions of the CRPS are similarly displayed for a standard logistic forecast distribution in Figure \ref{fig:scores_logis_example}.
 
 Functionality is not currently available to compute the vertically re-scaled CRPS for parametric distributions other than the normal distribution. We note, however, that it should be straightforward to obtain an analytical formula for the vertically re-scaled CRPS for several familiar distributions.
 
@@ -327,7 +337,7 @@ Conditional PIT values can also be calculated based on predictive samples, or en
 \begin{Code}
 cpit_sample(y, dat, a = -Inf, b = Inf, bw = NULL)
 \end{Code}
-Here, \code{dat} is a matrix with each row containing a sample or ensemble member. To calculate the conditional PIT values, the sample is first smoothed using kernel density estimation; note that this can lead to unreliable results if interest is on outcomes that exceed all sample members, since the conditional PIT values will rely on how the density estimation extrapolates beyond the observed sample. The \code{bw} argument specifies the bandwidth parameter to use within kernel density estimation; if this is not provided, then it is selected automatically based on the data.
+Here, \code{dat} is a matrix with each column containing a sample or ensemble member. To calculate the conditional PIT values, the sample is first smoothed using kernel density estimation; note that this can lead to unreliable results if interest is on outcomes that exceed all sample members, since the conditional PIT values will rely on how the density estimation extrapolates beyond the observed sample. The \code{bw} argument specifies the bandwidth parameter to use within kernel density estimation; if this is not provided, then it is selected automatically based on the data.
 
 For example, consider the case where the observations are drawn from a $\cN ( \mu, \sigma^{2})$, with $\mu \sim \cN (0, 1 - \sigma^{2} )$ and $\sigma^{2} = 1/3$. The ideal forecaster issues the distribution $\cN ( \mu, \sigma^{2})$ as their forecast, which, of course, is calibrated. To verify this, Figure \ref{fig:cpit_example} displays the corresponding PIT histogram and reliability diagram.
 
@@ -566,7 +576,7 @@ rel_index(z, bins = NULL, ranks = TRUE, method = "absolute")
 \end{Code}
 The argument \code{z} again represents a vector of ranks or PIT values (depending on \code{ranks}), while \code{bins} is the number of bins to be used in the histogram. Three methods are then available to calculate reliability indices: \code{method = `absolute'} (default) measures the sum of absolute distances between the observed relative frequencies and the optimal frequency, $1/$\code{bins}; \code{method = `squared'} measures the sum of squared distances between the observed relative frequencies and $1/$\code{bins}, which follows a chi-squared distribution when appropriately scaled; and \code{method = `entropy'} measures the entropy of the relative frequencies, which will be equal to 1 for a uniform rank histogram, and between 0 and 1 otherwise. These methods are discussed in detail in \cite{Wilks2019}.
 
-We can calculate reliability indices for the three forecast strategies considered here as a function of lead time. The reliability index is closest to zero for the post-processed forecasts, and is largest for the raw COSMO-E forecasts, which (for \code{method = `absolute'}) suggests that the post-processed forecasts are well-calibrated, whereas the COSMO-E forecasts are the least calibrated. These results align with the PIT histograms and reliability diagrams in Figure \ref{fig:pit_plots}.
+We can calculate (absolute) reliability indices for the three forecast strategies considered here as a function of lead time. The reliability index is closest to zero for the post-processed forecasts, and is largest for the raw COSMO-E forecasts, which (for \code{method = `absolute'}) suggests that the post-processed forecasts are well-calibrated, whereas the COSMO-E forecasts are the least calibrated. These results align with the PIT histograms and reliability diagrams in Figure \ref{fig:pit_plots}.
 
 <<rel_index, echo=FALSE>>=
 ## reliability index
@@ -650,7 +660,7 @@ wcrps_pp <- sapply(t_vec, function(t) owcrps_norm(obs_dat[lead, ], pp_mean[lead,
 
 # get mean scores
 wcrps_clim <- colMeans(wcrps_clim)
-wcrps_raw <- colMeans(wcrps_raw)
+wcrps_raw <- colMeans(wcrps_raw, na.rm=T) # note: generally should not ignore cases where the score is not defined - done so here for illustration
 wcrps_pp <- colMeans(wcrps_pp)
 
 # plot mean scores against threshold
@@ -877,7 +887,7 @@ Firstly, the package currently only contains functionality to apply the vertical
 
 This package also contains several reliability indices to quantify the deviation between a sample of ranks and the uniform distribution over these ranks; these provide a single measure of forecast miscalibration. Currently, however, these are based on ranks, and cannot be applied to PIT values. Measures of deviation between PIT values and the standard uniform distribution, e.g. based on entropy or maximum mean discrepancies, would also be useful in practice, and should be straightforward to incorporate here.
 
-Finally, \cite{AllenEtAl2023} additionally discuss how conditional multivariate rank and PIT histograms could be constructed. There is currently no software that contains the functionality to implement checks for multivariate calibration, and this could relatively easily be incorporated into this package, with the ultimate goal of providing a complete collection of methods to assess probabilistic forecast calibration. This could include, for example: reliability diagrams, rank histograms, (conditional) PIT histograms, (conditional) PIT reliability diagrams, (conditional) multivariate rank histograms, reliability indices, tests for calibration, sequential measures of calibration, functional-calibration reliability diagrams, and proper score decompositions, among other things.
+Finally, \cite{AllenEtAl2023} additionally discuss how conditional multivariate rank and PIT histograms could be constructed. There is currently no software that contains the functionality to implement checks for multivariate calibration (though a developmental package is available at \url{https://github.com/sallen12/MultivCalibration}), and this could relatively easily be incorporated into this package, with the ultimate goal of providing a complete collection of methods to assess probabilistic forecast calibration. This could include, for example: reliability diagrams, rank histograms, (conditional) PIT histograms, (conditional) PIT reliability diagrams, (conditional) multivariate rank histograms, reliability indices, tests for calibration, sequential measures of calibration, functional-calibration reliability diagrams, and proper score decompositions, among other things.
 
 
 %% Bibliography
@@ -885,7 +895,29 @@ Finally, \cite{AllenEtAl2023} additionally discuss how conditional multivariate 
 
 \section*{Appendix: Analytical formulae for weighted scores}
 
-\subsection{Vertically re-scaled CRPS}
+\subsection*{Threshold-weighted CRPS}
+
+Consider the weight function $w(z) = \ind\{a < z < b\}$. The threshold-weighted CRPS with this weight function is
+\[
+\int_{a}^{b} (F(z) - \ind \{ y \leq z\})^{2} \dd z,
+\]
+which is equivalent to the CRPS for a distribution that has been censored below at $a$ and censored above at $b$ (with $y$ also censored above and below at $a$ and $b$).
+
+\citet[Appendix A.4]{JordanEtAl2019} provide analytical formulae for this censored distribution when the forecast $F$ is a normal, logistic, or Student's $t$ distribution. The functions \code{twcrps_norm()}, \code{twcrps_logis()}, and \code{twcrps_t()} therefore contain calls to the \pkg{scoringRules} functions \code{crps_cnorm()}, \code{crps_clogis()}, and \code{crps_ct()}.
+
+
+\subsection*{Outcome-weighted CRPS}
+
+Consider the weight function $w(z) = \ind\{a < z < b\}$. The outcome-weighted CRPS with this weight function is
+\[
+\ind\{a < y < b\} \int_{-\infty}^{\infty} \left( \frac{F(z) - F(a)}{F(b) - F(a)} - \ind \{ y \leq z\} \right)^{2} \dd z,
+\]
+which is equal to zero if $y$ is not between $a$ and $b$, and is equivalent to the CRPS for a distribution that has been truncated below at $a$ and above at $b$, otherwise.
+
+\citet[Appendix A.4]{JordanEtAl2019} provide analytical formulae for this truncated distribution when the forecast $F$ is a normal, logistic, or Student's $t$ distribution. The functions \code{owcrps_norm()}, \code{owcrps_logis()}, and \code{owcrps_t()} therefore contain calls to the \pkg{scoringRules} functions \code{crps_tnorm()}, \code{crps_tlogis()}, and \code{crps_tt()}.
+
+
+\subsection*{Vertically re-scaled CRPS}
 
 Suppose the forecast is a normal distribution with mean $\mu$ and standard deviation $\sigma$, and that we observe the value $y$. Consider the weight function $w(z) = \ind\{a < z < b\}$, and let $x_{0} \in \R$. Additionally, let $a^{+} = \mathrm{max}(y, a)$, $a^{-} = \mathrm{min}(y, a)$, $b^{+} = \mathrm{max}(y, b)$, $b^{-} = \mathrm{min}(y, b)$, and $a_{0}^{+} = \mathrm{max}(x_{0}, a)$, $a_{0}^{-} = \mathrm{min}(x_{0}, a)$, $b_{0}^{+} = \mathrm{max}(x_{0}, b)$, $b_{0}^{-} = \mathrm{min}(x_{0}, b)$.
 
@@ -900,6 +932,7 @@ Then, the vertically re-scaled CRPS for this forecast distribution can be writte
   & \left. \sigma^{2} \left[ f(b_{0}^{-}) + f(a_{0}^{+}) - f(b_{0}^{+}) - f(a_{0}^{-}) \right] - |y - x_{0}|w(y) \right\} \left\{ F(b) - F(a) - w(y) \right\}.
 \end{split}
 \end{equation*}
+
 
 \end{document}
 
