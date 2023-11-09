@@ -3,8 +3,8 @@
 #' Plot probability integral transform (PIT) reliability diagrams from a vector
 #' of PIT values.
 #'
-#' @param z vector or list of vector of pit values.
-#' @param ranks logical specifying whether the input are ranks (TRUE) or PIT values (FALSE).
+#' @param z vector (or list of vectors) of pit values.
+#' @param ranks logical specifying whether the inputs are ranks (TRUE) or PIT values (FALSE).
 #' @param resampling logical specifying whether resampling should be used to calculate consistency regions.
 #' @param n_resamples number of resamples to use when calculating consistency regions.
 #' @param region_level significance level of the consistency regions.
@@ -29,7 +29,7 @@
 #' This permits a straightforward assessment of whether or not forecasts are
 #' calibrated, and deviations from the diagonal can be used to identify systematic
 #' errors that occur in the forecasts. These plots of the PIT values' distribution function
-#' are called PIT reliability diagrams.
+#' are called PIT reliability diagrams or PIT PP plots.
 #'
 #' To assess whether the distribution function is significantly different from the
 #' diagonal, we can calculate consistency regions around the diagonal, which would
@@ -42,7 +42,9 @@
 #' significance level by the argument \code{region_level}.
 #'
 #' \code{z} is either a vector of PIT values, or a list of vectors of PIT values to
-#' be plotted together. If \code{z} is a list and \code{resampling = TRUE}, resampling
+#' be plotted together. If \code{z} is a list, then the distribution function is
+#' displayed for each list, on the same plot. The legend entries will correspond
+#' to the names of the list elements. If \code{resampling = TRUE}, resampling
 #' is performed based on the number of elements in the first element of \code{z}.
 #' This implicitly assumes the number of elements is the same in all elements of \code{z}.
 #'

@@ -34,6 +34,10 @@ by first smoothing the predictive sample using kernel density estimation.
 The argument \code{bw} specifies the bandwidth parameter to use within kernel
 density estimation. If this is not provided, then it is selected using the core
 function \code{\link{bw.nrd}}.
+
+The argument \code{dat} contains the sample from the forecast distribution. This
+should be a matrix with the same number of rows as the length of \code{y}, with
+the columns representing different samples or ensemble members.
 }
 \examples{
 mu <- rnorm(20, mean = 0, sd = 5)

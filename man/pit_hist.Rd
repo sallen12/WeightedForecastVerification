@@ -49,8 +49,8 @@ Rank and probability integral transform (PIT) histograms are well-established
 diagnostic tools with which to assess the calibration of probabilistic forecasts.
 
 If the forecasts are samples from a predictive distribution (i.e. ensemble forecasts),
-then rank histograms displays the relative frequency that the observation assumes
-each rank among the sample members. If the forecast is probabilistically calibrated,
+then rank histograms display the relative frequency that the observation assumes
+each rank among the sample members. If the observations and ensemble members are exchangeable
 then the observation should be equally likely to assume any rank, meaning the ranks
 should be uniformly distributed. The resulting rank histogram should therefore be
 flat.
@@ -58,15 +58,15 @@ flat.
 If the forecasts are continuous predictive distributions, then probabilistic
 calibration can be assessed using PIT values, defined as the forecast
 distribution function evaluated at the observed outcome (with suitable
-randomisation for forecast distributions that are not continuous). If the observations
-are random draws from the forecast distribution, then these PIT values should
-follow a standard uniform distribution. Hence, plotting the distribution of
+randomisation for forecast distributions that are not continuous). If the forecasts
+are probabilistically calibrated, then these PIT values should
+follow a standard uniform distribution. Plotting the distribution of
 these PIT values should yield a flat histogram.
 
 In both cases, deviations from a flat histogram can be used to identify systematic
 deficiencies in the forecasts.
 
-By default, \code{pit_hist()} assumes the input \code{z} is a vector of integer ranks,
+By default, \code{pit_hist()} assumes the input \code{z} is a vector of ranks (integers),
 and thus that a rank histogram is to be plotted. Unless specified otherwise,
 the number of bins to display in the rank histogram is the maximum
 of the vector of ranks, though the number of bins can be specified manually

@@ -40,11 +40,17 @@
 #' @references
 #' \emph{PIT histograms}
 #'
-#' Dawid, A. P. (1984): `Present position and potential developments: Some personal views: Statistical theory: The prequential approach'. \emph{Journal of the Royal Statistical Society: Series A (General)} 147, 278-290. \doi{10.2307/2981683}
+#' Dawid, A. P. (1984):
+#' `Present position and potential developments: Some personal views: Statistical theory: The prequential approach'.
+#' \emph{Journal of the Royal Statistical Society: Series A} 147, 278-290.
+#' \doi{10.2307/2981683}
 #'
 #' \emph{Conditional PIT histograms}
 #'
-#' Allen, S., Bhend, J., Martius, O. and Ziegel, J (2023): `Weighted verification tools to evaluate univariate and multivariate probabilistic forecasts for high-impact weather events'. \emph{Weather and Forecasting} 38, 499–516. \doi{10.1175/WAF-D-22-0161.1}
+#' Allen, S., Bhend, J., Martius, O. and Ziegel, J (2023):
+#' `Weighted verification tools to evaluate univariate and multivariate probabilistic forecasts for high-impact weather events'.
+#' \emph{Weather and Forecasting} 38, 499–516.
+#' \doi{10.1175/WAF-D-22-0161.1}
 #'
 #'
 #' @examples

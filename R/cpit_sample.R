@@ -9,7 +9,6 @@
 #' @param bw vector of bandwidth parameters to use in kernel density estimation.
 #'
 #' @details
-#'
 #' \code{cpit_sample()} calculates conditional PIT values for forecast distributions
 #' in the form of an ensemble or predictive sample. See the documentation for
 #' \code{\link{cpit_param}} for details on conditional PIT histograms.
@@ -22,6 +21,9 @@
 #' density estimation. If this is not provided, then it is selected using the core
 #' function \code{\link{bw.nrd}}.
 #'
+#' The argument \code{dat} contains the sample from the forecast distribution. This
+#' should be a matrix with the same number of rows as the length of \code{y}, with
+#' the columns representing different samples or ensemble members.
 #'
 #' @return vector of conditional PIT values.
 #'

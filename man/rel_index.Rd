@@ -46,7 +46,7 @@ indices for which a lower value indicates a more calibrated forecast, whereas
 The argument \code{z} contains a vector of ranks or PIT values. If \code{z} contains
 PIT values, they are grouped into \code{bins} bins, and the reliability index is then
 calculated using these discretised values, rather than the original PIT values.
-Of course, future extensions could include alternative methods to measure the distance
+Future extensions could include alternative methods to measure the distance
 between the sample of PIT values and the standard uniform distribution, e.g. using
 maximum mean discrepancies or scoring rule divergences.
 }
