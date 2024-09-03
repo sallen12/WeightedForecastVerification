@@ -119,7 +119,9 @@ pit_hist <- function(z, bins = NULL, ranks = TRUE, title = NULL, ymax = NULL,
     ggplot2::scale_x_discrete(name = xlab) +
     ggplot2::scale_y_continuous(name = ylab, limits = c(0, ymax), expand = c(0, 0)) +
     ggplot2::theme_bw() +
-    ggplot2::theme(legend.title = ggplot2::element_blank(), panel.grid = ggplot2::element_blank()) +
+    ggplot2::theme(legend.title = ggplot2::element_blank(),
+                   panel.grid = ggplot2::element_blank(),
+                   plot.margin = margin(c(5.5, 10.5, 5.5, 5.5))) +
     ggplot2::ggtitle(title)
   if (!yticks) out_plot <- out_plot + ggplot2::theme(axis.ticks.y = ggplot2::element_blank(),
                                                      axis.text.y = ggplot2::element_blank())
