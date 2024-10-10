@@ -9,7 +9,8 @@
 \alias{twcrps_t}
 \alias{owcrps_t}
 \alias{vrcrps_norm}
-\title{weighted CRPS for a normal distribution}
+\alias{vrcrps_logis}
+\title{Weighted CRPS}
 \usage{
 twcrps_logis(y, location = 0, scale = 1, a = -Inf, b = Inf)
 
@@ -24,6 +25,8 @@ twcrps_t(y, df, ncp = 0, a = -Inf, b = Inf)
 owcrps_t(y, df, ncp = 0, a = -Inf, b = Inf, BS = T)
 
 vrcrps_norm(y, mean = 0, sd = 1, a = -Inf, b = Inf, x0 = 0)
+
+vrcrps_logis(y, location = 0, scale = 1, a = -Inf, b = Inf, x0 = 0)
 }
 \arguments{
 \item{y}{vector of observations.}
@@ -41,7 +44,10 @@ to the parametric predictive distributions.}
 vector of weighted score values.
 }
 \description{
-weighted CRPS for a normal distribution
+Weighted versions of the continuous ranked probability score (CRPS) for forecast
+distributions in the form of a normal, logistic, or Student's t distribution.
+The thresold-weighted, outcome-weighted, and vertically re-scaled CRPS are
+available.
 }
 \details{
 Weighted scoring rules allow forecasts to be assessed and compared when
@@ -55,7 +61,8 @@ The weight function used in the weighted scores is \code{w(z) = 1{a < z < b}}, w
 \code{a} and \code{b} are numerical values corresponding to the lower and upper
 bound of the interval of interest. The default values are \code{a = -Inf} and
 \code{b = Inf}, which returns the unweighted CRPS. Future work could also integrate
-the option to employ custom weight functions, as in \pkg{scoringRules}.
+the option to employ custom weight functions, as in \pkg{scoringRules}, though
+this is generally more difficult for parametric forecast distributions.
 
 The parameter arguments (\code{mean}, \code{sd}, \code{location}, \code{scale}, \code{df}, \code{ncp})
 should be vectors of the same length as the observation vector \code{y}. The naming of these parameters
@@ -101,10 +108,10 @@ Holzmann, H. and B. Klar (2017):
 
 \emph{Vertically re-scaled CRPS:}
 
-Allen, S., Ginsbourger, D. and J. Ziegel (2022):
+Allen, S., Ginsbourger, D. and J. Ziegel (2023):
 `Evaluating forecasts for high-impact events using transformed kernel scores',
-\emph{arXiv preprint} arXiv:2202.12732.
-\doi{10.48550/arXiv.2202.12732}
+\emph{SIAM/ASA Journal on Uncertainty Quantification} 11, 906-940.
+\doi{10.1137/22M1532184}
 }
 \author{
 Sam Allen

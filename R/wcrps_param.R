@@ -1,4 +1,9 @@
-#' weighted CRPS for a normal distribution
+#' Weighted CRPS
+#'
+#' Weighted versions of the continuous ranked probability score (CRPS) for forecast
+#' distributions in the form of a normal, logistic, or Student's t distribution.
+#' The thresold-weighted, outcome-weighted, and vertically re-scaled CRPS are
+#' available.
 #'
 #' @param y vector of observations.
 #' @param mean,sd,location,scale,df,ncp vector of parameters corresponding
@@ -20,7 +25,8 @@
 #' \code{a} and \code{b} are numerical values corresponding to the lower and upper
 #' bound of the interval of interest. The default values are \code{a = -Inf} and
 #' \code{b = Inf}, which returns the unweighted CRPS. Future work could also integrate
-#' the option to employ custom weight functions, as in \pkg{scoringRules}.
+#' the option to employ custom weight functions, as in \pkg{scoringRules}, though
+#' this is generally more difficult for parametric forecast distributions.
 #'
 #' The parameter arguments (\code{mean}, \code{sd}, \code{location}, \code{scale}, \code{df}, \code{ncp})
 #' should be vectors of the same length as the observation vector \code{y}. The naming of these parameters
@@ -51,10 +57,10 @@
 #'
 #' \emph{Vertically re-scaled CRPS:}
 #'
-#' Allen, S., Ginsbourger, D. and J. Ziegel (2022):
+#' Allen, S., Ginsbourger, D. and J. Ziegel (2023):
 #' `Evaluating forecasts for high-impact events using transformed kernel scores',
-#' \emph{arXiv preprint} arXiv:2202.12732.
-#' \doi{10.48550/arXiv.2202.12732}
+#' \emph{SIAM/ASA Journal on Uncertainty Quantification} 11, 906-940.
+#' \doi{10.1137/22M1532184}
 #'
 #' @examples
 #' sig <- 1
@@ -198,6 +204,59 @@ vrcrps_norm <- function(y, mean = 0, sd = 1, a = -Inf, b = Inf, x0 = 0){
   obj2 <- (obj2_1 - abs(y - x0)*w_y)*((F_b - F_a) - w_y)
 
   obj <- obj1 + obj2
+
+  return(obj)
+}
+
+#' @rdname wcrps_param
+#' @export
+vrcrps_logis <- function(y, location = 0, scale = 1, a = -Inf, b = Inf, x0 = 0){
+  # needs checking
+
+  b_min <- pmin(y, b)
+  b_max <- pmax(y, b)
+  a_min <- pmin(y, a)
+  a_max <- pmax(y, a)
+
+  b_min_x0 <- pmin(x0, b)
+  b_max_x0 <- pmax(x0, b)
+  a_min_x0 <- pmin(x0, a)
+  a_max_x0 <- pmax(x0, a)
+
+  w_y <- as.numeric(y > a & y < b)
+
+
+  F_b <- plogis(b, location = location, scale = scale)
+  F_a <- plogis(a, location = location, scale = scale)
+
+  F_b_min <- plogis(b_min, location = location, scale = scale)
+  F_b_max <- plogis(b_max, location = location, scale = scale)
+  F_a_min <- plogis(a_min, location = location, scale = scale)
+  F_a_max <- plogis(a_max, location = location, scale = scale)
+
+  F_b_min_x0 <- plogis(b_min_x0, location = location, scale = scale)
+  F_b_max_x0 <- plogis(b_max_x0, location = location, scale = scale)
+  F_a_min_x0 <- plogis(a_min_x0, location = location, scale = scale)
+  F_a_max_x0 <- plogis(a_max_x0, location = location, scale = scale)
+
+  o1 <- (b_max - y)*F_b_max + (a_min - y)*F_a_min - (b_min - y)*F_b_min + (a_max - y)*F_a_max
+  o2 <- (b_max + a_min - b_min - a_max)
+  o3 <- scale*(log(F_b_max) + log(F_a_min) - log(F_b_min) - log(F_a_max))
+  obj1 <- w_y*(o1 - o2 + o3)
+
+  o1 <- b*F_b - b*F_b*F_a - b + b*F_a + scale*log(F_b) - scale*F_a*log(F_b) + scale*F_a*log(F_a)
+  o2 <- a*F_a - a*F_a*F_b - a + a*F_b + scale*log(F_a) - scale*F_b*log(F_a) + scale*F_b*log(F_b)
+  o3 <- scale*(F_b - F_a)
+  obj2 <- o1 - o2 + o3
+
+  o1 <- (b_max_x0 - x0)*F_b_max_x0 + (a_min_x0 - x0)*F_a_min_x0 - (b_min_x0 - x0)*F_b_min_x0 + (a_max_x0 - x0)*F_a_max_x0
+  o2 <- (b_max_x0 + a_min_x0 - b_min_x0 - a_max_x0)
+  o3 <- scale*(log(F_b_max_x0) + log(F_a_min_x0) - log(F_b_min_x0) - log(F_a_max_x0))
+  obj3 <- o1 - o2 + o3
+
+  obj3 <- (obj3 - abs(y - x0)*w_y)*((F_b - F_a) - w_y)
+
+  obj <- obj1 - obj2 + obj3
 
   return(obj)
 }
