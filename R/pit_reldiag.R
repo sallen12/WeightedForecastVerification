@@ -124,7 +124,7 @@ pit_reldiag <- function(z, ranks = FALSE, resampling = TRUE, n_resamples = 1000,
       ggplot2::theme_bw() +
       ggplot2::theme(legend.title = ggplot2::element_blank(),
                      panel.grid = ggplot2::element_blank(),
-                     plot.margin = margin(c(5.5, 10.5, 5.5, 5.5))) +
+                     plot.margin = ggplot2::margin(c(5.5, 10.5, 5.5, 5.5))) +
       ggplot2::ggtitle(title)
 
   }
