@@ -111,6 +111,7 @@ pit_reldiag <- function(z, ranks = FALSE, resampling = TRUE, n_resamples = 1000,
 
   } else {
 
+    z <- na.omit(z)
     if (ranks) z <- (z + runif(length(z)) - 1)/max(z) # convert ranks to PIT values
 
     dist_pit = ecdf(z)
