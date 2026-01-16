@@ -106,7 +106,7 @@ pit_reldiag <- function(z, ranks = FALSE, resampling = TRUE, n_resamples = 1000,
                      legend.justification = c(0, 1),
                      legend.position = c(0.01, 0.99),
                      panel.grid = ggplot2::element_blank(),
-                     plot.margin = ggplot2::margin(c(5.5, 10.5, 5.5, 5.5))) +
+                     plot.margin = ggplot2::margin(5.5, 10.5, 5.5, 5.5)) +
       ggplot2::ggtitle(title)
 
   } else {
@@ -125,7 +125,7 @@ pit_reldiag <- function(z, ranks = FALSE, resampling = TRUE, n_resamples = 1000,
       ggplot2::theme_bw() +
       ggplot2::theme(legend.title = ggplot2::element_blank(),
                      panel.grid = ggplot2::element_blank(),
-                     plot.margin = ggplot2::margin(c(5.5, 10.5, 5.5, 5.5))) +
+                     plot.margin = ggplot2::margin(5.5, 10.5, 5.5, 5.5)) +
       ggplot2::ggtitle(title)
 
   }

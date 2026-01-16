@@ -89,7 +89,7 @@ tc_reldiag <- function(x, y, t_vec, title = NULL, xlab = "x", ylab = "x_rc", poi
                   legend.title = ggplot2::element_blank(),
                   legend.justification = c(0, 1),
                   legend.position = c(0.01, 0.99),
-                  plot.margin = ggplot2::margin(c(5.5, 10.5, 5.5, 5.5))) +
+                  plot.margin = ggplot2::margin(5.5, 10.5, 5.5, 5.5)) +
     ggplot2::ggtitle(title)
 
   if (!is.null(pointSize) && !is.null(textSize) && !is.null(spaceLegend)) {

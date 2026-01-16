@@ -121,7 +121,7 @@ pit_hist <- function(z, bins = NULL, ranks = TRUE, title = NULL, ymax = NULL,
     ggplot2::theme_bw() +
     ggplot2::theme(legend.title = ggplot2::element_blank(),
                    panel.grid = ggplot2::element_blank(),
-                   plot.margin = ggplot2::margin(c(5.5, 10.5, 5.5, 5.5))) +
+                   plot.margin = ggplot2::margin(5.5, 10.5, 5.5, 5.5)) +
     ggplot2::ggtitle(title)
   if (!yticks) out_plot <- out_plot + ggplot2::theme(axis.ticks.y = ggplot2::element_blank(),
                                                      axis.text.y = ggplot2::element_blank())
